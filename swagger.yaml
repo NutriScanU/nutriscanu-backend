@@ -58,3 +58,42 @@ paths:
           description: Credenciales incorrectas
         '500':
           description: Error en servidor
+
+  /api/auth/profile:
+    get:
+      summary: Obtener perfil del usuario autenticado
+      description: Retorna los datos del usuario logueado usando su token JWT
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil obtenido con éxito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      first_name:
+                        type: string
+                      last_name:
+                        type: string
+                      email:
+                        type: string
+                      role:
+                        type: string
+        '401':
+          description: Token inválido o no enviado
+        '404':
+          description: Usuario no encontrado
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
