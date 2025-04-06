@@ -1,0 +1,5 @@
+# Ignorar dependencias y configs sensibles
+node_modules/
+.env
+*.log
+.DS_Store
