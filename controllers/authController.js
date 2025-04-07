@@ -13,24 +13,62 @@ export const register = async (req, res) => {
       email,
       password,
       confirm_password,
-      role // opcional: por si se registra desde un panel admin
+      role
     } = req.body;
 
-    // Validar número de documento
+    // Validaciones obligatorias
+    if (!first_name || !last_name || !email || !password || !document_number || !confirm_password) {
+      return res.status(400).json({
+        error: 'Todos los campos obligatorios deben estar completos.'
+      });
+    }
+
+    // Valida nombre solo letras y espacios
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+
+    if (!nameRegex.test(first_name)) {
+      return res.status(400).json({
+        error: 'El nombre solo puede contener letras y espacios.'
+      });
+    }
+
+    if (!nameRegex.test(last_name)) {
+      return res.status(400).json({
+        error: 'El apellido paterno solo puede contener letras y espacios.'
+      });
+    }
+
+    if (middle_name && !nameRegex.test(middle_name)) {
+      return res.status(400).json({
+        error: 'El apellido materno solo puede contener letras y espacios.'
+      });
+    }
+
+    // Validar longitud
+    if (first_name.length < 2 || last_name.length < 2) {
+      return res.status(400).json({ error: 'El nombre o apellido es demasiado corto.' });
+    }
+
+    // Validar formato del documento
     if (!/^\d{8}$/.test(document_number)) {
       return res.status(400).json({
         error: 'El número de documento debe tener 8 dígitos numéricos.'
       });
     }
 
-    // Validar coincidencia de contraseñas
+    // Validar correo
+    if (!email.includes('@')) {
+      return res.status(400).json({ error: 'Correo electrónico inválido.' });
+    }
+
+    // Validar contraseñas coincidan
     if (password !== confirm_password) {
       return res.status(400).json({
         error: 'Las contraseñas no coinciden.'
       });
     }
 
-    // Validar rol si se envía manualmente
+    // Validar rol si se envía
     const rolesValidos = ['estudiante', 'admin'];
     if (role && !rolesValidos.includes(role)) {
       return res.status(400).json({
@@ -38,15 +76,15 @@ export const register = async (req, res) => {
       });
     }
 
-    // Validar si el documento ya existe
-    const existing = await User.findOne({ where: { document_number } });
-    if (existing) {
+    // Verificar si ya existe documento
+    const existingUser = await User.findOne({ where: { document_number } });
+    if (existingUser) {
       return res.status(400).json({
         error: 'El número de documento ya está registrado.'
       });
     }
 
-    // Capitalizar nombres
+    // Capitalización de nombres
     const firstNameCap = capitalize(first_name);
     const lastNameCap = capitalize(last_name);
     const middleNameCap = middle_name ? capitalize(middle_name) : null;
@@ -60,7 +98,7 @@ export const register = async (req, res) => {
       document_number,
       email,
       password: hashedPassword,
-      role: role || 'estudiante' // por defecto: estudiante
+      role: role || 'estudiante'
     });
 
     return res.status(201).json({

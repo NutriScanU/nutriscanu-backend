@@ -1,6 +1,7 @@
 import User from '../models/user.js';
 import { Op } from 'sequelize';
 import bcrypt from 'bcryptjs';
+import capitalize from '../utils/capitalize.js';
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -56,6 +57,24 @@ export const updateUser = async (req, res) => {
       password
     } = req.body;
 
+    // Capitalizar datos si llegan
+    const firstNameCap = first_name ? capitalize(first_name) : user.first_name;
+    const lastNameCap = last_name ? capitalize(last_name) : user.last_name;
+    const middleNameCap = middle_name ? capitalize(middle_name) : user.middle_name;
+
+    // Validar campos si vienen en el body
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+      
+    if (first_name && !nameRegex.test(first_name)) {
+      return res.status(400).json({ error: 'Nombre inválido: solo letras y espacios.' });
+    }
+    if (last_name && !nameRegex.test(last_name)) {
+      return res.status(400).json({ error: 'Apellido paterno inválido.' });
+    }
+    if (middle_name && !nameRegex.test(middle_name)) {
+      return res.status(400).json({ error: 'Apellido materno inválido.' });
+    }
+
     // 🔐 Validar que no se degrade a otro admin
     if (user.role === 'admin' && role === 'estudiante') {
       return res.status(403).json({
@@ -73,14 +92,14 @@ export const updateUser = async (req, res) => {
 
     // 🔁 Construir campos a actualizar
     const updatedFields = {
-      first_name,
-      last_name,
-      middle_name,
+      first_name: firstNameCap,
+      last_name: lastNameCap,
+      middle_name: middleNameCap,
       email,
       document_number,
       role
     };
-
+    
     // 🔒 Si hay nueva contraseña, la encriptamos
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);

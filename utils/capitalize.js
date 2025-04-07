@@ -1,7 +1,9 @@
 // utils/capitalize.js ✅ versión ES Module compatible
-const capitalize = (str) => {
-  if (!str || typeof str !== 'string') return '';
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-};
-
-export default capitalize;
+export default function capitalize(str = '') {
+  return str
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
