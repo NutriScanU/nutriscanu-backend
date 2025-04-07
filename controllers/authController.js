@@ -104,7 +104,7 @@ export const login = async (req, res) => {
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findByPk(req.user.userId, {
-      attributes: ['id', 'first_name', 'last_name', 'email', 'role']
+      attributes: ['id', 'first_name', 'last_name', 'middle_name', 'email', 'role']
     });
 
     if (!user) {

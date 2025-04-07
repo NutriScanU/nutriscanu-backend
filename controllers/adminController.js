@@ -12,7 +12,7 @@ export const getAllUsers = async (req, res) => {
           [Op.not]: currentAdminId
         }
       },
-      attributes: ['id', 'first_name', 'last_name', 'email', 'role']
+      attributes: ['id', 'first_name', 'last_name','middle_name', 'email', 'role']
     });
 
     res.json({ users });
@@ -25,7 +25,7 @@ export const getAllUsers = async (req, res) => {
 export const getUserById = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id, {
-      attributes: ['id', 'first_name', 'last_name', 'email', 'role']
+      attributes: ['id', 'first_name', 'last_name','middle_name', 'email', 'role']
     });
 
     if (!user) {

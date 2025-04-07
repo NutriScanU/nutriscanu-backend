@@ -29,13 +29,21 @@ paths:
                   type: string
                 confirm_password:
                   type: string
+              example:
+                first_name: Luis
+                last_name: Ramos
+                middle_name: Pérez
+                document_number: "12345678"
+                email: luis@example.com
+                password: clave123
+                confirm_password: clave123
       responses:
         '201':
-          description: Usuario registrado
+          description: Usuario registrado correctamente
         '400':
-          description: Error en datos
+          description: Error en los datos proporcionados
         '500':
-          description: Error en servidor
+          description: Error interno del servidor
 
   /api/auth/login:
     post:
@@ -51,13 +59,16 @@ paths:
                   type: string
                 password:
                   type: string
+              example:
+                document_number: "12345678"
+                password: clave123
       responses:
         '200':
           description: Login exitoso
         '400':
           description: Credenciales incorrectas
         '500':
-          description: Error en servidor
+          description: Error interno del servidor
 
   /api/auth/profile:
     get:
@@ -84,6 +95,8 @@ paths:
                         type: string
                       last_name:
                         type: string
+                      middle_name:
+                        type: string
                       email:
                         type: string
                       role:
@@ -92,18 +105,20 @@ paths:
           description: Token inválido o no enviado
         '404':
           description: Usuario no encontrado
+        '500':
+          description: Error interno del servidor
 
   /api/admin/users:
     get:
       summary: Listar todos los usuarios
-      description: Devuelve un arreglo de todos los usuarios (solo admin)
+      description: Devuelve todos los usuarios excepto el administrador actual (solo admin)
       security:
         - bearerAuth: []
       tags:
         - Admin
       responses:
         '200':
-          description: Lista de usuarios
+          description: Lista de usuarios obtenida correctamente
           content:
             application/json:
               schema:
@@ -120,6 +135,8 @@ paths:
                           type: string
                         last_name:
                           type: string
+                        middle_name:
+                          type: string
                         email:
                           type: string
                         role:
@@ -128,6 +145,8 @@ paths:
           description: Token no proporcionado o inválido
         '403':
           description: Acceso denegado
+        '500':
+          description: Error interno del servidor
 
   /api/admin/users/{id}:
     get:
@@ -150,6 +169,10 @@ paths:
           description: Usuario no encontrado
         '403':
           description: Acceso denegado
+        '401':
+          description: Token inválido
+        '500':
+          description: Error interno del servidor
 
     put:
       summary: Actualizar usuario por ID
@@ -185,6 +208,14 @@ paths:
                   type: string
                 role:
                   type: string
+              example:
+                first_name: Camila
+                last_name: Luján
+                middle_name: Díaz
+                document_number: "98765432"
+                email: camila@example.com
+                password: nuevacontra456
+                role: admin
       responses:
         '200':
           description: Usuario actualizado correctamente
@@ -194,9 +225,10 @@ paths:
           description: Acción no permitida
         '404':
           description: Usuario no encontrado
+        '401':
+          description: Token inválido
         '500':
           description: Error interno del servidor
-
 
     delete:
       summary: Eliminar usuario por ID
@@ -218,6 +250,10 @@ paths:
           description: Usuario no encontrado
         '403':
           description: Acceso denegado
+        '401':
+          description: Token inválido
+        '500':
+          description: Error interno del servidor
 
 components:
   securitySchemes:
