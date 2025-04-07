@@ -8,67 +8,40 @@ paths:
   /api/auth/register:
     post:
       summary: Registro de usuario
+      tags:
+        - Auth
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                first_name:
-                  type: string
-                last_name:
-                  type: string
-                middle_name:
-                  type: string
-                document_number:
-                  type: string
-                email:
-                  type: string
-                password:
-                  type: string
-                confirm_password:
-                  type: string
-              example:
-                first_name: Luis
-                last_name: Ramos
-                middle_name: Pérez
-                document_number: "12345678"
-                email: luis@example.com
-                password: clave123
-                confirm_password: clave123
+              $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
           description: Usuario registrado correctamente
         '400':
-          description: Error en los datos proporcionados
+          $ref: '#/components/responses/BadRequest'
         '500':
-          description: Error interno del servidor
+          $ref: '#/components/responses/ServerError'
 
   /api/auth/login:
     post:
       summary: Iniciar sesión
+      tags:
+        - Auth
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                document_number:
-                  type: string
-                password:
-                  type: string
-              example:
-                document_number: "12345678"
-                password: clave123
+              $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
           description: Login exitoso
         '400':
-          description: Credenciales incorrectas
+          $ref: '#/components/responses/BadRequest'
         '500':
-          description: Error interno del servidor
+          $ref: '#/components/responses/ServerError'
 
   /api/auth/profile:
     get:
@@ -87,31 +60,17 @@ paths:
                 type: object
                 properties:
                   profile:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      first_name:
-                        type: string
-                      last_name:
-                        type: string
-                      middle_name:
-                        type: string
-                      email:
-                        type: string
-                      role:
-                        type: string
+                    $ref: '#/components/schemas/UserResponse'
         '401':
-          description: Token inválido o no enviado
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Usuario no encontrado
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Error interno del servidor
+          $ref: '#/components/responses/ServerError'
 
   /api/admin/users:
     get:
-      summary: Listar todos los usuarios
-      description: Devuelve todos los usuarios excepto el administrador actual (solo admin)
+      summary: Listar todos los usuarios (excepto el admin actual)
       security:
         - bearerAuth: []
       tags:
@@ -127,31 +86,17 @@ paths:
                   users:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                        first_name:
-                          type: string
-                        last_name:
-                          type: string
-                        middle_name:
-                          type: string
-                        email:
-                          type: string
-                        role:
-                          type: string
+                      $ref: '#/components/schemas/UserResponse'
         '401':
-          description: Token no proporcionado o inválido
+          $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Acceso denegado
+          $ref: '#/components/responses/Forbidden'
         '500':
-          description: Error interno del servidor
+          $ref: '#/components/responses/ServerError'
 
   /api/admin/users/{id}:
     get:
       summary: Obtener un usuario por ID
-      description: Devuelve la información de un usuario específico (solo admin)
       security:
         - bearerAuth: []
       tags:
@@ -165,18 +110,21 @@ paths:
       responses:
         '200':
           description: Usuario encontrado
-        '404':
-          description: Usuario no encontrado
-        '403':
-          description: Acceso denegado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
         '401':
-          description: Token inválido
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Error interno del servidor
+          $ref: '#/components/responses/ServerError'
 
     put:
       summary: Actualizar usuario por ID
-      description: Permite actualizar nombre, documento, correo, contraseña o rol del usuario (solo admin)
       security:
         - bearerAuth: []
       tags:
@@ -192,47 +140,23 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                first_name:
-                  type: string
-                last_name:
-                  type: string
-                middle_name:
-                  type: string
-                document_number:
-                  type: string
-                email:
-                  type: string
-                password:
-                  type: string
-                role:
-                  type: string
-              example:
-                first_name: Camila
-                last_name: Luján
-                middle_name: Díaz
-                document_number: "98765432"
-                email: camila@example.com
-                password: nuevacontra456
-                role: admin
+              $ref: '#/components/schemas/UpdateUserRequest'
       responses:
         '200':
           description: Usuario actualizado correctamente
         '400':
-          description: Datos inválidos
-        '403':
-          description: Acción no permitida
-        '404':
-          description: Usuario no encontrado
+          $ref: '#/components/responses/BadRequest'
         '401':
-          description: Token inválido
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Error interno del servidor
+          $ref: '#/components/responses/ServerError'
 
     delete:
       summary: Eliminar usuario por ID
-      description: Elimina un usuario de la base de datos (solo admin)
       security:
         - bearerAuth: []
       tags:
@@ -246,14 +170,14 @@ paths:
       responses:
         '200':
           description: Usuario eliminado correctamente
-        '404':
-          description: Usuario no encontrado
-        '403':
-          description: Acceso denegado
         '401':
-          description: Token inválido
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Error interno del servidor
+          $ref: '#/components/responses/ServerError'
 
 components:
   securitySchemes:
@@ -261,3 +185,95 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: Token inválido o no enviado
+    Forbidden:
+      description: Acceso denegado
+    NotFound:
+      description: Recurso no encontrado
+    ServerError:
+      description: Error interno del servidor
+    BadRequest:
+      description: Datos inválidos enviados
+
+  schemas:
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        first_name:
+          type: string
+        last_name:
+          type: string
+        middle_name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+
+    RegisterRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        middle_name:
+          type: string
+        document_number:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        confirm_password:
+          type: string
+      example:
+        first_name: Luis
+        last_name: Ramos
+        middle_name: Pérez
+        document_number: "12345678"
+        email: luis@example.com
+        password: clave123
+        confirm_password: clave123
+
+    LoginRequest:
+      type: object
+      properties:
+        document_number:
+          type: string
+        password:
+          type: string
+      example:
+        document_number: "12345678"
+        password: clave123
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        middle_name:
+          type: string
+        document_number:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+      example:
+        first_name: Camila
+        last_name: Luján
+        middle_name: Díaz
+        document_number: "98765432"
+        email: camila@example.com
+        password: nuevacontra456
+        role: admin
