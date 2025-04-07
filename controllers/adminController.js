@@ -1,16 +1,26 @@
 import User from '../models/user.js';
+import { Op } from 'sequelize';
 
 export const getAllUsers = async (req, res) => {
   try {
+    const currentAdminId = req.user.userId;
+
     const users = await User.findAll({
+      where: {
+        id: {
+          [Op.not]: currentAdminId
+        }
+      },
       attributes: ['id', 'first_name', 'last_name', 'email', 'role']
     });
+
     res.json({ users });
   } catch (error) {
     console.error('Error al obtener usuarios:', error);
     res.status(500).json({ error: 'Error en el servidor' });
   }
 };
+
 
 export const getUserById = async (req, res) => {
   try {
