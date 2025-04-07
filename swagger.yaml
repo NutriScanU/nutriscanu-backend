@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: API Recomendación de Alimentos
   version: 1.0.0
-  description: Registro y login de estudiantes
+  description: Registro, login, y administración de usuarios
 
 paths:
   /api/auth/register:
@@ -65,6 +65,8 @@ paths:
       description: Retorna los datos del usuario logueado usando su token JWT
       security:
         - bearerAuth: []
+      tags:
+        - Auth
       responses:
         '200':
           description: Perfil obtenido con éxito
@@ -90,6 +92,121 @@ paths:
           description: Token inválido o no enviado
         '404':
           description: Usuario no encontrado
+
+  /api/admin/users:
+    get:
+      summary: Listar todos los usuarios
+      description: Devuelve un arreglo de todos los usuarios (solo admin)
+      security:
+        - bearerAuth: []
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        first_name:
+                          type: string
+                        last_name:
+                          type: string
+                        email:
+                          type: string
+                        role:
+                          type: string
+        '401':
+          description: Token no proporcionado o inválido
+        '403':
+          description: Acceso denegado
+
+  /api/admin/users/{id}:
+    get:
+      summary: Obtener un usuario por ID
+      description: Devuelve la información de un usuario específico (solo admin)
+      security:
+        - bearerAuth: []
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Usuario encontrado
+        '404':
+          description: Usuario no encontrado
+        '403':
+          description: Acceso denegado
+
+    put:
+      summary: Actualizar usuario por ID
+      description: Permite actualizar nombre, correo o rol del usuario (solo admin)
+      security:
+        - bearerAuth: []
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                email:
+                  type: string
+                role:
+                  type: string
+      responses:
+        '200':
+          description: Usuario actualizado
+        '404':
+          description: Usuario no encontrado
+        '403':
+          description: Acceso denegado
+
+    delete:
+      summary: Eliminar usuario por ID
+      description: Elimina un usuario de la base de datos (solo admin)
+      security:
+        - bearerAuth: []
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Usuario eliminado correctamente
+        '404':
+          description: Usuario no encontrado
+        '403':
+          description: Acceso denegado
 
 components:
   securitySchemes:
