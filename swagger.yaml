@@ -68,16 +68,39 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /api/admin/users:
+    /api/admin/users:
     get:
-      summary: Listar todos los usuarios (excepto el admin actual)
-      security:
-        - bearerAuth: []
+      summary: Listar usuarios con paginación (excepto el admin actual)
       tags:
         - Admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: orderBy
+          in: query
+          schema:
+            type: string
+            enum: [first_name, last_name, email, createdAt]
+            default: createdAt
+        - name: orderDir
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
       responses:
         '200':
-          description: Lista de usuarios obtenida correctamente
+          description: Lista de usuarios paginada
           content:
             application/json:
               schema:
@@ -87,12 +110,25 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/UserResponse'
+                  page:
+                    type: integer
+                    example: 1
+                  limit:
+                    type: integer
+                    example: 10
+                  total:
+                    type: integer
+                    example: 57
+                  pages:
+                    type: integer
+                    example: 6
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/ServerError'
+
 
   /api/admin/users/{id}:
     get:

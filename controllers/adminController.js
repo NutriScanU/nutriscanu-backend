@@ -7,18 +7,36 @@ export const getAllUsers = async (req, res) => {
   try {
     const currentAdminId = req.user.userId;
 
-    const users = await User.findAll({
+    // 🧠 Extraer query params
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const orderBy = req.query.orderBy || 'createdAt'; // campo de orden
+    const orderDir = req.query.orderDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+    // 📦 Consulta total sin admin actual
+    const { count, rows } = await User.findAndCountAll({
       where: {
-        id: {
-          [Op.not]: currentAdminId
-        }
+        id: { [Op.not]: currentAdminId }
       },
-      attributes: ['id', 'first_name', 'last_name','middle_name', 'email', 'role']
+      limit,
+      offset,
+      order: [[orderBy, orderDir]],
+      attributes: ['id', 'first_name', 'last_name', 'middle_name', 'email', 'role']
     });
 
-    res.json({ users });
+    const totalPages = Math.ceil(count / limit);
+
+    res.json({
+      users: rows,
+      page,
+      total: count,
+      pages: totalPages,
+      limit
+    });
   } catch (error) {
-    console.error('Error al obtener usuarios:', error);
+    console.error('Error al obtener usuarios paginados:', error);
     res.status(500).json({ error: 'Error en el servidor' });
   }
 };
