@@ -132,10 +132,36 @@ export const deleteUser = async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
+    if (user.id === req.user.userId) {
+      return res.status(403).json({ error: 'No puedes eliminar tu propia cuenta como administrador.' });
+    }
+
     await user.destroy();
+
+    console.log(`[ADMIN ACTION] Admin ID ${req.user.userId} eliminó al usuario ID ${user.id}`);
+
     res.json({ message: 'Usuario eliminado correctamente' });
   } catch (error) {
     console.error('Error al eliminar usuario:', error);
     res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+};
+
+export const getStats = async (req, res) => {
+  try {
+    const total = await User.count();
+    const admins = await User.count({ where: { role: 'admin' } });
+    const estudiantes = await User.count({ where: { role: 'estudiante' } });
+
+    res.json({
+      total,
+      admins,
+      estudiantes
+    });
+
+    console.log(`[ADMIN ACTION] Admin ID ${req.user.userId} consultó las estadísticas.`);
+  } catch (error) {
+    console.error('Error al obtener estadísticas:', error);
+    res.status(500).json({ error: 'Error al obtener estadísticas' });
   }
 };
