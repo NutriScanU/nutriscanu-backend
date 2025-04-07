@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: API Recomendación de Alimentos
   version: 1.0.0
-  description: Registro, login y administración de usuarios
+  description: Registro, login, y administración de usuarios
 
 paths:
   /api/auth/register:
@@ -40,8 +40,6 @@ paths:
           description: Login exitoso
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -73,10 +71,10 @@ paths:
   /api/admin/users:
     get:
       summary: Listar todos los usuarios (excepto el admin actual)
-      tags:
-        - Admin
       security:
         - bearerAuth: []
+      tags:
+        - Admin
       responses:
         '200':
           description: Lista de usuarios obtenida correctamente
@@ -99,10 +97,10 @@ paths:
   /api/admin/users/{id}:
     get:
       summary: Obtener un usuario por ID
-      tags:
-        - Admin
       security:
         - bearerAuth: []
+      tags:
+        - Admin
       parameters:
         - name: id
           in: path
@@ -115,10 +113,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/UserResponse'
+                $ref: '#/components/schemas/UserResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -130,10 +125,10 @@ paths:
 
     put:
       summary: Actualizar usuario por ID
-      tags:
-        - Admin
       security:
         - bearerAuth: []
+      tags:
+        - Admin
       parameters:
         - name: id
           in: path
@@ -162,10 +157,10 @@ paths:
 
     delete:
       summary: Eliminar usuario por ID
-      tags:
-        - Admin
       security:
         - bearerAuth: []
+      tags:
+        - Admin
       parameters:
         - name: id
           in: path
@@ -181,28 +176,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /api/admin/stats:
-    get:
-      summary: Obtener estadísticas de usuarios
-      tags:
-        - Admin
-      description: Devuelve cantidad total de usuarios, admins y estudiantes
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Estadísticas obtenidas
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StatsResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -226,7 +199,6 @@ components:
       description: Datos inválidos enviados
 
   schemas:
-
     UserResponse:
       type: object
       properties:
@@ -245,13 +217,6 @@ components:
 
     RegisterRequest:
       type: object
-      required:
-        - first_name
-        - last_name
-        - document_number
-        - email
-        - password
-        - confirm_password
       properties:
         first_name:
           type: string
@@ -263,10 +228,8 @@ components:
           type: string
         email:
           type: string
-          format: email
         password:
           type: string
-          minLength: 6
         confirm_password:
           type: string
       example:
@@ -280,9 +243,6 @@ components:
 
     LoginRequest:
       type: object
-      required:
-        - document_number
-        - password
       properties:
         document_number:
           type: string
@@ -294,10 +254,6 @@ components:
 
     UpdateUserRequest:
       type: object
-      required:
-        - first_name
-        - last_name
-        - email
       properties:
         first_name:
           type: string
@@ -309,10 +265,8 @@ components:
           type: string
         email:
           type: string
-          format: email
         password:
           type: string
-          minLength: 6
         role:
           type: string
       example:
@@ -323,13 +277,3 @@ components:
         email: camila@example.com
         password: nuevacontra456
         role: admin
-
-    StatsResponse:
-      type: object
-      properties:
-        total:
-          type: integer
-        admins:
-          type: integer
-        estudiantes:
-          type: integer
