@@ -1,5 +1,6 @@
-import User from '../models/user.js';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import User from '../models/user.js';
 import capitalize from '../utils/capitalize.js';
 
 export const register = async (req, res) => {
@@ -70,5 +71,49 @@ export const register = async (req, res) => {
     return res.status(500).json({
       error: 'Error interno del servidor al registrar el usuario.'
     });
+  }
+};
+
+export const login = async (req, res) => {
+  try {
+    const { document_number, password } = req.body;
+
+    const user = await User.findOne({ where: { document_number } });
+    if (!user) {
+      return res.status(400).json({ error: 'Usuario no encontrado' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Contraseña incorrecta' });
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.status(200).json({ token });
+  } catch (error) {
+    console.error('Error al iniciar sesión:', error);
+    res.status(500).json({ error: 'Error interno al iniciar sesión' });
+  }
+};
+
+export const getProfile = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.userId, {
+      attributes: ['id', 'first_name', 'last_name', 'email', 'role']
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({ profile: user });
+  } catch (error) {
+    console.error('Error al obtener perfil:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
