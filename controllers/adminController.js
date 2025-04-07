@@ -38,10 +38,27 @@ export const updateUser = async (req, res) => {
 
     const { first_name, last_name, email, role } = req.body;
 
+    // 🛡️ Validación: prevenir degradar a otro admin
+    if (user.role === 'admin' && role === 'estudiante') {
+      return res.status(403).json({
+        error: 'No puedes cambiar el rol de un administrador a estudiante'
+      });
+    }
+
+    // ❌ Validación: el rol debe ser válido
+    const rolesValidos = ['estudiante', 'admin'];
+
+    if (role && !rolesValidos.includes(role)) {
+      return res.status(400).json({
+        error: 'No existe el rol. Comuníquese con el administrador.'
+      });
+    }
+
     await user.update({ first_name, last_name, email, role });
 
     res.json({ message: 'Usuario actualizado', user });
   } catch (error) {
+    console.error('Error al actualizar usuario:', error);
     res.status(500).json({ error: 'Error al actualizar usuario' });
   }
 };
@@ -57,6 +74,7 @@ export const deleteUser = async (req, res) => {
     await user.destroy();
     res.json({ message: 'Usuario eliminado correctamente' });
   } catch (error) {
+    console.error('Error al eliminar usuario:', error);
     res.status(500).json({ error: 'Error al eliminar usuario' });
   }
 };
