@@ -153,7 +153,7 @@ paths:
 
     put:
       summary: Actualizar usuario por ID
-      description: Permite actualizar nombre, correo o rol del usuario (solo admin)
+      description: Permite actualizar nombre, documento, correo, contraseña o rol del usuario (solo admin)
       security:
         - bearerAuth: []
       tags:
@@ -175,17 +175,28 @@ paths:
                   type: string
                 last_name:
                   type: string
+                middle_name:
+                  type: string
+                document_number:
+                  type: string
                 email:
+                  type: string
+                password:
                   type: string
                 role:
                   type: string
       responses:
         '200':
-          description: Usuario actualizado
+          description: Usuario actualizado correctamente
+        '400':
+          description: Datos inválidos
+        '403':
+          description: Acción no permitida
         '404':
           description: Usuario no encontrado
-        '403':
-          description: Acceso denegado
+        '500':
+          description: Error interno del servidor
+
 
     delete:
       summary: Eliminar usuario por ID
