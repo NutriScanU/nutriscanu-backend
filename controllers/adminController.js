@@ -151,7 +151,20 @@ export const deleteUser = async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    await user.destroy(); 
+    // ✅ Eliminar (soft delete si usas paranoid:true)
+    await user.destroy();
+
+    // ✅ Registrar en AuditLog
+    const admin = await User.findByPk(req.user.userId); // Obtener datos del admin actual
+
+    await AuditLog.create({
+      action: 'delete',
+      targetUserId: user.id,
+      performedById: admin.id,
+      performedByName: `${admin.first_name} ${admin.middle_name} ${admin.last_name}`,
+      performedByEmail: admin.email
+    });
+
     res.json({ message: 'Usuario eliminado correctamente' });
   } catch (error) {
     console.error('Error al eliminar usuario:', error);
