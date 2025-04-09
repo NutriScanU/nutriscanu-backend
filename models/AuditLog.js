@@ -1,11 +1,11 @@
 // models/AuditLog.js
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
-import User from './user.js'; // Importar el modelo User para relacionarlo
+import User from './user.js';
 
 const AuditLog = sequelize.define('AuditLog', {
   action: {
-    type: DataTypes.ENUM('delete', 'restore'),
+    type: DataTypes.ENUM('delete', 'restore', 'update'),
     allowNull: false
   },
   targetUserId: {
@@ -16,6 +16,14 @@ const AuditLog = sequelize.define('AuditLog', {
     type: DataTypes.INTEGER,
     allowNull: false
   },
+  performedByName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  performedByEmail: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
   restoreCount: {
     type: DataTypes.INTEGER,
     defaultValue: 0
@@ -24,12 +32,10 @@ const AuditLog = sequelize.define('AuditLog', {
   timestamps: true
 });
 
-// 🔗 Asociar con el modelo User
-AuditLog.associate = () => {
-  AuditLog.belongsTo(User, {
-    foreignKey: 'performedById',
-    as: 'admin'
-  });
-};
+// 🔗 Asociación directa al modelo User
+AuditLog.belongsTo(User, {
+  foreignKey: 'performedById',
+  as: 'admin'
+});
 
 export default AuditLog;

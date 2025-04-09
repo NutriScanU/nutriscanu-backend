@@ -213,6 +213,49 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/ServerError' }
 
+  /api/admin/users/{id}/restore:
+    put:
+      summary: Restaurar usuario eliminado (soft delete)
+      description: Restaura un usuario previamente eliminado (requiere ser admin)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Usuario restaurado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Usuario restaurado correctamente ✅
+        '400':
+          description: El usuario no está eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: El usuario no está eliminado.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 components:
   securitySchemes:
     bearerAuth:

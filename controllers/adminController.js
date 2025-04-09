@@ -4,19 +4,16 @@ import bcrypt from 'bcryptjs';
 import capitalize from '../utils/capitalize.js';
 import AuditLog from '../models/AuditLog.js';
 
+// 📄 Listar usuarios con paginación
 export const getAllUsers = async (req, res) => {
   try {
     const currentAdminId = req.user.userId;
-
-    // 🧠 Extraer query params
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
-
-    const orderBy = req.query.orderBy || 'createdAt'; // campo de orden
+    const orderBy = req.query.orderBy || 'createdAt';
     const orderDir = req.query.orderDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-    // 📦 Consulta total sin admin actual
     const { count, rows } = await User.findAndCountAll({
       where: {
         id: { [Op.not]: currentAdminId }
@@ -42,6 +39,7 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
+// 🔍 Obtener usuario por ID
 export const getUserById = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id, {
@@ -58,6 +56,7 @@ export const getUserById = async (req, res) => {
   }
 };
 
+// ✏️ Actualizar usuario
 export const updateUser = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
@@ -76,14 +75,12 @@ export const updateUser = async (req, res) => {
       password
     } = req.body;
 
-    // Capitalizar datos si llegan
     const firstNameCap = first_name ? capitalize(first_name) : user.first_name;
     const lastNameCap = last_name ? capitalize(last_name) : user.last_name;
     const middleNameCap = middle_name ? capitalize(middle_name) : user.middle_name;
 
-    // Validar campos si vienen en el body
     const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
-      
+
     if (first_name && !nameRegex.test(first_name)) {
       return res.status(400).json({ error: 'Nombre inválido: solo letras y espacios.' });
     }
@@ -94,14 +91,12 @@ export const updateUser = async (req, res) => {
       return res.status(400).json({ error: 'Apellido materno inválido.' });
     }
 
-    // 🔐 Validar que no se degrade a otro admin
     if (user.role === 'admin' && role === 'estudiante') {
       return res.status(403).json({
         error: 'No puedes cambiar el rol de un administrador a estudiante'
       });
     }
 
-    // ✅ Validar que el rol sea uno permitido
     const rolesValidos = ['estudiante', 'admin'];
     if (role && !rolesValidos.includes(role)) {
       return res.status(400).json({
@@ -109,7 +104,6 @@ export const updateUser = async (req, res) => {
       });
     }
 
-    // 🔁 Construir campos a actualizar
     const updatedFields = {
       first_name: firstNameCap,
       last_name: lastNameCap,
@@ -118,17 +112,24 @@ export const updateUser = async (req, res) => {
       document_number,
       role
     };
-    
-    // 🔒 Si hay nueva contraseña, la encriptamos
+
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
       updatedFields.password = hashedPassword;
     }
 
-    // 🔨 Actualizar usuario
     const updatedUser = await user.update(updatedFields);
 
-    // 🚫 No devolver la contraseña en la respuesta
+    // ✅ Loguear auditoría de actualización
+    const admin = await User.findByPk(req.user.userId);
+    await AuditLog.create({
+      action: 'update',
+      targetUserId: user.id,
+      performedById: admin.id,
+      performedByName: `${admin.first_name} ${admin.middle_name} ${admin.last_name}`,
+      performedByEmail: admin.email
+    });
+
     const { password: _, ...safeUser } = updatedUser.toJSON();
 
     res.json({
@@ -143,6 +144,7 @@ export const updateUser = async (req, res) => {
   }
 };
 
+// ❌ Eliminar usuario (Soft Delete)
 export const deleteUser = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
@@ -151,11 +153,9 @@ export const deleteUser = async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    // ✅ Eliminar (soft delete si usas paranoid:true)
     await user.destroy();
 
-    // ✅ Registrar en AuditLog
-    const admin = await User.findByPk(req.user.userId); // Obtener datos del admin actual
+    const admin = await User.findByPk(req.user.userId);
 
     await AuditLog.create({
       action: 'delete',
@@ -172,6 +172,56 @@ export const deleteUser = async (req, res) => {
   }
 };
 
+// ✅ Restaurar usuario eliminado
+export const restoreUser = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id, {
+      paranoid: false
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    if (!user.deletedAt) {
+      return res.status(400).json({ error: 'El usuario no está eliminado.' });
+    }
+
+    await user.restore();
+
+    const previousLog = await AuditLog.findOne({
+      where: {
+        action: 'restore',
+        targetUserId: user.id,
+        performedById: req.user.userId
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    let restoreCount = 1;
+    if (previousLog) {
+      restoreCount = previousLog.restoreCount + 1;
+    }
+
+    const admin = await User.findByPk(req.user.userId);
+
+    await AuditLog.create({
+      action: 'restore',
+      targetUserId: user.id,
+      performedById: admin.id,
+      performedByName: `${admin.first_name} ${admin.middle_name} ${admin.last_name}`,
+      performedByEmail: admin.email,
+      restoreCount
+    });
+
+    res.json({ message: 'Usuario restaurado correctamente ✅' });
+  } catch (error) {
+    console.error('❌ Error al restaurar usuario:', error);
+    res.status(500).json({ error: 'Error al restaurar el usuario' });
+  }
+};
+
+// 📊 Obtener historial del admin actual
 export const getAuditLogsByAdmin = async (req, res) => {
   try {
     const adminId = req.user.userId;
@@ -179,12 +229,8 @@ export const getAuditLogsByAdmin = async (req, res) => {
 
     const where = { performedById: adminId };
     if (action) {
-      where.action = action; // delete o restore
+      where.action = action;
     }
-
-    // 👇 Logs de depuración
-    console.log('🕵️‍♂️ Admin ID que consulta:', adminId);
-    console.log('📌 Filtro aplicado:', where);
 
     const logs = await AuditLog.findAll({
       where,

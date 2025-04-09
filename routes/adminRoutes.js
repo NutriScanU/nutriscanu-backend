@@ -7,8 +7,10 @@ import {
   getUserById,
   updateUser,
   deleteUser,
-  getAuditLogsByAdmin
+  getAuditLogsByAdmin,
+  restoreUser
 } from '../controllers/adminController.js';
+
 
 const router = express.Router();
 
@@ -34,5 +36,8 @@ router.delete('/users/:id', authMiddleware, isAdmin, deleteUser);     // ❌ Eli
  🧾 AUDITORÍA: HISTORIAL DE ACCIONES DEL ADMIN
 ──────────────────────────────────────────────── */
 router.get('/audit-logs', authMiddleware, isAdmin, getAuditLogsByAdmin); // 📊 Ver historial de acciones
+
+// 🔁 Restaurar usuario eliminado
+router.put('/users/:id/restore', authMiddleware, isAdmin, restoreUser);
 
 export default router;
