@@ -2,14 +2,13 @@ openapi: 3.0.0
 info:
   title: API Recomendación de Alimentos
   version: 1.0.0
-  description: Registro, login, y administración de usuarios
+  description: Registro, login y administración de usuarios
 
 paths:
   /api/auth/register:
     post:
       summary: Registro de usuario
-      tags:
-        - Auth
+      tags: [Auth]
       requestBody:
         required: true
         content:
@@ -27,8 +26,7 @@ paths:
   /api/auth/login:
     post:
       summary: Iniciar sesión
-      tags:
-        - Auth
+      tags: [Auth]
       requestBody:
         required: true
         content:
@@ -47,10 +45,9 @@ paths:
     get:
       summary: Obtener perfil del usuario autenticado
       description: Retorna los datos del usuario logueado usando su token JWT
+      tags: [Auth]
       security:
         - bearerAuth: []
-      tags:
-        - Auth
       responses:
         '200':
           description: Perfil obtenido con éxito
@@ -68,11 +65,10 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-    /api/admin/users:
+  /api/admin/users:
     get:
       summary: Listar usuarios con paginación (excepto el admin actual)
-      tags:
-        - Admin
+      tags: [Admin]
       security:
         - bearerAuth: []
       parameters:
@@ -112,16 +108,12 @@ paths:
                       $ref: '#/components/schemas/UserResponse'
                   page:
                     type: integer
-                    example: 1
                   limit:
                     type: integer
-                    example: 10
                   total:
                     type: integer
-                    example: 57
                   pages:
                     type: integer
-                    example: 6
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -129,14 +121,12 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-
   /api/admin/users/{id}:
     get:
       summary: Obtener un usuario por ID
+      tags: [Admin]
       security:
         - bearerAuth: []
-      tags:
-        - Admin
       parameters:
         - name: id
           in: path
@@ -150,21 +140,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
 
     put:
       summary: Actualizar usuario por ID
+      tags: [Admin]
       security:
         - bearerAuth: []
-      tags:
-        - Admin
       parameters:
         - name: id
           in: path
@@ -180,23 +165,17 @@ paths:
       responses:
         '200':
           description: Usuario actualizado correctamente
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
 
     delete:
       summary: Eliminar usuario por ID
+      tags: [Admin]
       security:
         - bearerAuth: []
-      tags:
-        - Admin
       parameters:
         - name: id
           in: path
@@ -206,14 +185,10 @@ paths:
       responses:
         '200':
           description: Usuario eliminado correctamente
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
 
 components:
   securitySchemes:
@@ -225,49 +200,82 @@ components:
   responses:
     Unauthorized:
       description: Token inválido o no enviado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Token inválido
+
     Forbidden:
       description: Acceso denegado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: No tienes permisos para acceder
+
     NotFound:
       description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Usuario no encontrado
+
     ServerError:
       description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Error inesperado
+
     BadRequest:
       description: Datos inválidos enviados
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Faltan campos obligatorios
 
   schemas:
     UserResponse:
       type: object
       properties:
-        id:
-          type: integer
-        first_name:
-          type: string
-        last_name:
-          type: string
-        middle_name:
-          type: string
-        email:
-          type: string
-        role:
-          type: string
+        id: { type: integer }
+        first_name: { type: string }
+        last_name: { type: string }
+        middle_name: { type: string }
+        document_number: { type: string }
+        email: { type: string }
+        role: { type: string }
 
     RegisterRequest:
       type: object
       properties:
-        first_name:
-          type: string
-        last_name:
-          type: string
-        middle_name:
-          type: string
-        document_number:
-          type: string
-        email:
-          type: string
-        password:
-          type: string
-        confirm_password:
-          type: string
+        first_name: { type: string }
+        last_name: { type: string }
+        middle_name: { type: string }
+        document_number: { type: string }
+        email: { type: string }
+        password: { type: string }
+        confirm_password: { type: string }
+      required: [first_name, last_name, middle_name, document_number, email, password, confirm_password]
       example:
         first_name: Luis
         last_name: Ramos
@@ -280,10 +288,9 @@ components:
     LoginRequest:
       type: object
       properties:
-        document_number:
-          type: string
-        password:
-          type: string
+        document_number: { type: string }
+        password: { type: string }
+      required: [document_number, password]
       example:
         document_number: "12345678"
         password: clave123
@@ -291,20 +298,13 @@ components:
     UpdateUserRequest:
       type: object
       properties:
-        first_name:
-          type: string
-        last_name:
-          type: string
-        middle_name:
-          type: string
-        document_number:
-          type: string
-        email:
-          type: string
-        password:
-          type: string
-        role:
-          type: string
+        first_name: { type: string }
+        last_name: { type: string }
+        middle_name: { type: string }
+        document_number: { type: string }
+        email: { type: string }
+        password: { type: string }
+        role: { type: string }
       example:
         first_name: Camila
         last_name: Luján

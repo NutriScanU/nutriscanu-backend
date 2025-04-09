@@ -13,7 +13,7 @@ const User = sequelize.define('User', {
   },
   middle_name: {
     type: DataTypes.STRING,
-    allowNull: true,
+    allowNull: false,
   },
   document_number: {
     type: DataTypes.CHAR(8),
