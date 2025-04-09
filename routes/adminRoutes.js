@@ -2,13 +2,15 @@
 import express from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
 import isAdmin from '../middleware/isAdmin.js';
+
 import {
   getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
   getAuditLogsByAdmin,
-  restoreUser
+  restoreUser,
+  changeUserRole
 } from '../controllers/adminController.js';
 
 
@@ -39,5 +41,8 @@ router.get('/audit-logs', authMiddleware, isAdmin, getAuditLogsByAdmin); // 📊
 
 // 🔁 Restaurar usuario eliminado
 router.put('/users/:id/restore', authMiddleware, isAdmin, restoreUser);
+
+// 👇 Nueva ruta para cambiar el rol
+router.put('/users/:id/role', authMiddleware, isAdmin, changeUserRole);
 
 export default router;

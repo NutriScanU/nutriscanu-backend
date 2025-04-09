@@ -243,3 +243,70 @@ export const getAuditLogsByAdmin = async (req, res) => {
     res.status(500).json({ error: 'Error al obtener historial de acciones.' });
   }
 };
+
+export const changeUserRole = async (req, res) => {
+  try {
+    const targetUserId = req.params.id;
+    const { role } = req.body;
+    const validRoles = ['estudiante', 'admin'];
+
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: 'Rol no permitido' });
+    }
+
+    const adminId = req.user.userId;
+    const admin = await User.findByPk(adminId);
+    const user = await User.findByPk(targetUserId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // 🛑 Evitar cambiarse a sí mismo a rol inferior
+    if (adminId === user.id && role !== 'admin') {
+      return res.status(403).json({ error: 'No puedes degradarte a ti mismo' });
+    }
+
+    // 🛑 Validar si ya tiene el rol solicitado
+    if (user.role === role) {
+      return res.status(400).json({
+        error: `El usuario ya tiene el rol "${role}".`
+      });
+    }
+
+    // 🛡️ Evitar degradar a otro admin
+    if (user.role === 'admin' && role === 'estudiante') {
+      return res.status(403).json({
+        error: 'No puedes degradar a un administrador existente'
+      });
+    }
+
+    const previousRole = user.role;
+
+    // ✅ Actualizar rol
+    user.role = role;
+    await user.save();
+
+    // 🧾 Auditar
+    await AuditLog.create({
+      action: 'update',
+      targetUserId: user.id,
+      performedById: admin.id,
+      performedByName: `${admin.first_name} ${admin.middle_name} ${admin.last_name}`,
+      performedByEmail: admin.email
+    });
+
+    res.status(200).json({
+      message: `Rol del usuario actualizado de "${previousRole}" a "${role}"`,
+      user: {
+        id: user.id,
+        nombre: `${user.first_name} ${user.middle_name} ${user.last_name}`,
+        nuevo_rol: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error al cambiar rol de usuario:', error);
+    res.status(500).json({ error: 'Error al cambiar el rol del usuario' });
+  }
+};

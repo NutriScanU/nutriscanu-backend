@@ -190,6 +190,38 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/ServerError' }
 
+  /api/admin/users/{id}/role:
+    put:
+      summary: Cambiar el rol de un usuario
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  enum: [estudiante, admin]
+              example:
+                role: admin
+      responses:
+        '200':
+          description: Rol actualizado con éxito
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
   /api/admin/audit-logs:
     get:
       summary: Ver historial de acciones del administrador
