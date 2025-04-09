@@ -2,6 +2,7 @@ import User from '../models/user.js';
 import { Op } from 'sequelize';
 import bcrypt from 'bcryptjs';
 import capitalize from '../utils/capitalize.js';
+import AuditLog from '../models/AuditLog.js';
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -155,5 +156,31 @@ export const deleteUser = async (req, res) => {
   } catch (error) {
     console.error('Error al eliminar usuario:', error);
     res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+};
+
+export const getAuditLogsByAdmin = async (req, res) => {
+  try {
+    const adminId = req.user.userId;
+    const { action } = req.query;
+
+    const where = { performedById: adminId };
+    if (action) {
+      where.action = action; // delete o restore
+    }
+
+    // 👇 Logs de depuración
+    console.log('🕵️‍♂️ Admin ID que consulta:', adminId);
+    console.log('📌 Filtro aplicado:', where);
+
+    const logs = await AuditLog.findAll({
+      where,
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.status(200).json({ logs });
+  } catch (error) {
+    console.error('❌ Error al obtener historial de acciones:', error);
+    res.status(500).json({ error: 'Error al obtener historial de acciones.' });
   }
 };

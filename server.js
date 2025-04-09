@@ -8,6 +8,8 @@ import open from 'open';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import sequelize from './config/db.js';
+import './models/AuditLog.js';
+
 
 // Cargar variables de entorno
 dotenv.config();

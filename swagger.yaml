@@ -190,6 +190,29 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/ServerError' }
 
+  /api/admin/audit-logs:
+    get:
+      summary: Ver historial de acciones del administrador
+      description: Devuelve las acciones realizadas por el admin autenticado (como eliminar o actualizar usuarios)
+      tags: [Auditoría]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Historial obtenido con éxito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLog'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -313,3 +336,30 @@ components:
         email: camila@example.com
         password: nuevacontra456
         role: admin
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+          enum: [delete, restore]
+        user_id:
+          type: integer
+          description: ID del admin que ejecutó la acción
+        target_id:
+          type: integer
+          description: ID del usuario afectado
+        timestamp:
+          type: string
+          format: date-time
+        performed_by:
+          type: object
+          properties:
+            id: { type: integer }
+            first_name: { type: string }
+            last_name: { type: string }
+            middle_name: { type: string }
+            document_number: { type: string }
+            email: { type: string }
