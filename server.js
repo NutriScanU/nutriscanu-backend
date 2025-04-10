@@ -79,3 +79,13 @@ sequelize.authenticate()
   .catch((err) => {
     console.error('❌ Error al sincronizar tablas o conectar a la DB:', err);
   });
+
+  if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+      const swaggerURL = `http://localhost:${PORT}/api-docs`;
+      console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+      open(swaggerURL);
+    });
+  }
+
+export default app;
