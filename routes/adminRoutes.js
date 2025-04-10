@@ -10,7 +10,8 @@ import {
   deleteUser,
   getAuditLogsByAdmin,
   restoreUser,
-  changeUserRole
+  changeUserRole,
+  createStudent
 } from '../controllers/adminController.js';
 
 
@@ -44,5 +45,8 @@ router.put('/users/:id/restore', authMiddleware, isAdmin, restoreUser);
 
 // 👇 Nueva ruta para cambiar el rol
 router.put('/users/:id/role', authMiddleware, isAdmin, changeUserRole);
+
+// 🧑‍🎓 Crear estudiante con contraseña generada
+router.post('/students', authMiddleware, isAdmin, createStudent);
 
 export default router;

@@ -36,6 +36,80 @@ paths:
       responses:
         '200':
           description: Login exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Token JWT de autenticación
+                  mustChangePassword:
+                    type: boolean
+                    description: Indica si el usuario debe cambiar su contraseña
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      summary: Iniciar sesión
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login exitoso
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/auth/forgot-password:
+    post:
+      summary: Solicitar recuperación de contraseña
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+      responses:
+        '200':
+          description: Token generado
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/auth/reset-password:
+    post:
+      summary: Establecer nueva contraseña con token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, new_password, confirm_password]
+              properties:
+                token:
+                  type: string
+                new_password:
+                  type: string
+                confirm_password:
+                  type: string
+      responses:
+        '200':
+          description: Contraseña restablecida correctamente
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -411,6 +485,24 @@ components:
         email: camila@example.com
         password: nuevacontra456
         role: admin
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - current_password
+        - new_password
+        - confirm_password
+      properties:
+        current_password:
+          type: string
+        new_password:
+          type: string
+        confirm_password:
+          type: string
+      example:
+        current_password: clave123
+        new_password: nuevaclave456
+        confirm_password: nuevaclave456
 
     AuditLog:
       type: object

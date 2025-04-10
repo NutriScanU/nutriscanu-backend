@@ -15,7 +15,7 @@ const User = sequelize.define(
     },
     middle_name: {
       type: DataTypes.STRING,
-      allowNull: false, 
+      allowNull: false,
     },
     document_number: {
       type: DataTypes.CHAR(8),
@@ -35,11 +35,24 @@ const User = sequelize.define(
       type: DataTypes.ENUM('estudiante', 'admin'),
       defaultValue: 'estudiante',
     },
+    mustChangePassword: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    resetPasswordToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    resetPasswordExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    
   },
   {
     timestamps: true,
     paranoid: true, // 👈 Esto activa soft delete
-    deletedAt: 'deletedAt', // Nombre del campo para saber cuándo fue borrado
+    deletedAt: 'deletedAt',
   }
 );
 

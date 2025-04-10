@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import User from '../models/user.js';
@@ -130,13 +131,17 @@ export const login = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    res.status(200).json({ token });
+    res.status(200).json({
+      token,
+      mustChangePassword: user.mustChangePassword // ✅ ¡Aquí está el campo!
+    });
 
   } catch (error) {
     console.error('❌ Error al iniciar sesión:', error);
     res.status(500).json({ error: 'Error interno al iniciar sesión.' });
   }
 };
+
 
 // 👤 Obtener perfil del usuario logueado
 export const getProfile = async (req, res) => {
@@ -154,5 +159,123 @@ export const getProfile = async (req, res) => {
   } catch (error) {
     console.error('❌ Error al obtener perfil:', error);
     res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+};
+
+// 🔄 Cambiar contraseña (con validación de mustChangePassword)
+export const changePassword = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { current_password, new_password, confirm_password } = req.body;
+
+    if (!current_password || !new_password || !confirm_password) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
+    }
+
+    if (new_password.length < 6) {
+      return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+    }
+
+    if (new_password !== confirm_password) {
+      return res.status(400).json({ error: 'Las contraseñas nuevas no coinciden.' });
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+
+    const isMatch = await bcrypt.compare(current_password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Contraseña actual incorrecta.' });
+    }
+
+    const hashed = await bcrypt.hash(new_password, 10);
+    user.password = hashed;
+    user.mustChangePassword = false; // ✅ ya no se le pedirá cambiarla
+    await user.save();
+
+    res.json({ message: 'Contraseña actualizada correctamente.' });
+
+  } catch (error) {
+    console.error('❌ Error al cambiar contraseña:', error);
+    res.status(500).json({ error: 'Error interno al cambiar la contraseña.' });
+  }
+};
+
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'El correo es obligatorio' });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ error: 'No existe un usuario con ese correo' });
+    }
+
+    // 🎯 Generar token aleatorio y expiración
+    const token = crypto.randomBytes(20).toString('hex');
+    const expires = Date.now() + 1000 * 60 * 15; // 15 min
+
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = new Date(expires);
+    await user.save();
+
+    // En un sistema real enviaríamos esto por correo
+    return res.status(200).json({
+      message: 'Token de recuperación generado',
+      token: token // solo para pruebas
+    });
+  } catch (error) {
+    console.error('❌ Error en forgotPassword:', error);
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, new_password, confirm_password } = req.body;
+
+    if (!token || !new_password || !confirm_password) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+
+    if (new_password.length < 6) {
+      return res.status(400).json({ error: 'Contraseña muy corta' });
+    }
+
+    if (new_password !== confirm_password) {
+      return res.status(400).json({ error: 'Las contraseñas no coinciden' });
+    }
+
+    const user = await User.findOne({
+      where: {
+        resetPasswordToken: token,
+        resetPasswordExpires: {
+          [Op.gt]: new Date()
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Token inválido o expirado' });
+    }
+
+    user.password = await bcrypt.hash(new_password, 10);
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    user.mustChangePassword = false;
+
+    await user.save();
+
+    res.json({ message: 'Contraseña restablecida correctamente ✅' });
+  } catch (error) {
+    console.error('❌ Error en resetPassword:', error);
+    res.status(500).json({ error: 'Error interno' });
   }
 };

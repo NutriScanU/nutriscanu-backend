@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import bcrypt from 'bcryptjs';
 import capitalize from '../utils/capitalize.js';
 import AuditLog from '../models/AuditLog.js';
+import crypto from 'crypto'; 
 
 // 📄 Listar usuarios con paginación
 export const getAllUsers = async (req, res) => {
@@ -308,5 +309,68 @@ export const changeUserRole = async (req, res) => {
   } catch (error) {
     console.error('❌ Error al cambiar rol de usuario:', error);
     res.status(500).json({ error: 'Error al cambiar el rol del usuario' });
+  }
+};
+
+// ➕ Crear estudiante con contraseña generada automáticamente
+export const createStudent = async (req, res) => {
+  try {
+    const {
+      first_name,
+      last_name,
+      middle_name,
+      document_number,
+      email
+    } = req.body;
+
+    // Validaciones básicas
+    if (!first_name || !last_name || !middle_name || !document_number || !email) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
+    }
+
+    const existing = await User.findOne({
+      where: {
+        [Op.or]: [{ email }, { document_number }]
+      }
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: 'Ya existe un usuario con ese correo o DNI.' });
+    }
+
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    if (!nameRegex.test(first_name) || !nameRegex.test(last_name) || !nameRegex.test(middle_name)) {
+      return res.status(400).json({ error: 'Nombres y apellidos solo pueden contener letras.' });
+    }
+
+    // ✅ Generar contraseña temporal
+    const tempPassword = crypto.randomBytes(6).toString('hex'); // ejemplo: "a1b2c3d4e5f6"
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    // Crear estudiante
+    const student = await User.create({
+      first_name: capitalize(first_name),
+      last_name: capitalize(last_name),
+      middle_name: capitalize(middle_name),
+      document_number,
+      email,
+      password: hashedPassword,
+      role: 'estudiante',
+      mustChangePassword: true
+    });
+
+    // Respuesta
+    res.status(201).json({
+      message: 'Estudiante registrado correctamente.',
+      temporalPassword: tempPassword,
+      user: {
+        id: student.id,
+        name: `${student.first_name} ${student.middle_name} ${student.last_name}`,
+        email: student.email
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error al crear estudiante:', error);
+    res.status(500).json({ error: 'Error interno al crear estudiante.' });
   }
 };
