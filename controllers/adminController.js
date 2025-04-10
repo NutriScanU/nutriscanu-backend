@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import capitalize from '../utils/capitalize.js';
 import AuditLog from '../models/AuditLog.js';
 import crypto from 'crypto'; 
+import { sendWelcomeEmail } from '../utils/emailSender.js';
 
 // 📄 Listar usuarios con paginación
 export const getAllUsers = async (req, res) => {
@@ -343,7 +344,7 @@ export const createStudent = async (req, res) => {
       return res.status(400).json({ error: 'Nombres y apellidos solo pueden contener letras.' });
     }
 
-    // ✅ Generar contraseña temporal
+    // ✅ Generar contraseña temporal segura
     const tempPassword = crypto.randomBytes(6).toString('hex'); // ejemplo: "a1b2c3d4e5f6"
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
@@ -359,7 +360,14 @@ export const createStudent = async (req, res) => {
       mustChangePassword: true
     });
 
-    // Respuesta
+    // 🔔 Enviar correo de bienvenida con la contraseña temporal
+    await sendWelcomeEmail(
+      student.email,
+      tempPassword,
+      `${student.first_name} ${student.middle_name} ${student.last_name}`
+    );
+
+    // ✅ Respuesta al frontend
     res.status(201).json({
       message: 'Estudiante registrado correctamente.',
       temporalPassword: tempPassword,
@@ -369,6 +377,7 @@ export const createStudent = async (req, res) => {
         email: student.email
       }
     });
+
   } catch (error) {
     console.error('❌ Error al crear estudiante:', error);
     res.status(500).json({ error: 'Error interno al crear estudiante.' });
