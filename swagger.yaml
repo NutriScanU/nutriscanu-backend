@@ -139,6 +139,39 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /api/auth/change-password:
+    put:
+      summary: Cambiar la contraseña del usuario autenticado
+      description: Permite al usuario cambiar su contraseña. Si mustChangePassword es true, se actualiza a false.
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Contraseña actualizada correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Contraseña actualizada correctamente.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/admin/users:
     get:
       summary: Listar usuarios con paginación (excepto el admin actual)
@@ -315,6 +348,47 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/AuditLog'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/admin/students:
+    post:
+      summary: Crear estudiante con contraseña temporal generada automáticamente
+      description: Solo administradores pueden crear estudiantes. Se genera una contraseña temporal que debe ser cambiada en el primer login.
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStudentRequest'
+      responses:
+        '201':
+          description: Estudiante creado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Estudiante registrado correctamente.
+                  temporalPassword:
+                    type: string
+                    example: a1b2c3d4
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      email:
+                        type: string
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '500': { $ref: '#/components/responses/ServerError' }
@@ -530,3 +604,31 @@ components:
             middle_name: { type: string }
             document_number: { type: string }
             email: { type: string }
+
+    CreateStudentRequest:
+      type: object
+      required:
+        - first_name
+        - last_name
+        - middle_name
+        - document_number
+        - email
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        middle_name:
+          type: string
+        document_number:
+          type: string
+          pattern: '^\d{8}$'
+        email:
+          type: string
+          format: email
+      example:
+        first_name: Carlos
+        last_name: Torres
+        middle_name: Mejía
+        document_number: "87654321"
+        email: carlos.torres@example.com
