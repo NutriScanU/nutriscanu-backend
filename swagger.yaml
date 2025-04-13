@@ -172,6 +172,28 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /api/students/register-clinic:
+    post:
+      summary: Registrar datos clínicos del estudiante
+      tags: [Estudiante]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClinicalProfileInput'
+      responses:
+        '201':
+          description: Perfil clínico registrado
+        '400':
+          description: Perfil ya existe
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/admin/users:
     get:
       summary: Listar usuarios con paginación (excepto el admin actual)
@@ -559,6 +581,34 @@ components:
         email: camila@example.com
         password: nuevacontra456
         role: admin
+        
+    ClinicalProfileInput:
+      type: object
+      required: [age, gender]
+      properties:
+        age:
+          type: integer
+        gender:
+          type: string
+          enum: [Male, Female]
+        bmi:
+          type: number
+        hbA1c:
+          type: number
+        blood_glucose_level:
+          type: integer
+        hemoglobin:
+          type: number
+        insulin:
+          type: number
+        triglycerides:
+          type: integer
+        hematocrit:
+          type: number
+        red_blood_cells:
+          type: number
+        smoking_history:
+          type: string
 
     ChangePasswordRequest:
       type: object
