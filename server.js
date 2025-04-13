@@ -1,18 +1,15 @@
 // server.js
-import express from 'express';
 import dotenv from 'dotenv';
-import cors from 'cors';
-import swaggerUi from 'swagger-ui-express';
-import YAML from 'yamljs';
 import open from 'open';
-
-import authRoutes from './routes/authRoutes.js';
-import adminRoutes from './routes/adminRoutes.js';
 import sequelize from './config/db.js';
+import app from './app.js';
+import User from './models/user.js';
 import './models/AuditLog.js';
-import User from './models/user.js'; // ✅ Importar el modelo User para crear el admin inicial
 
-// ✅ Función para crear admin al iniciar
+dotenv.config();
+
+const PORT = process.env.PORT || 5000;
+
 async function crearAdminInicial() {
   const adminEmail = 'alexjosu21@gmail.com';
 
@@ -32,60 +29,23 @@ async function crearAdminInicial() {
       role: 'admin'
     });
 
-    console.log('✅ Admin creado automáticamente (alexjosu21@gmail.com)');
+    console.log('✅ Admin creado automáticamente');
   } else {
-    console.log('ℹ️ Admin ya existe, no se crea uno nuevo.');
+    console.log('ℹ️ Admin ya existe.');
   }
 }
 
-// 🌱 Cargar variables de entorno
-dotenv.config();
-
-// ⚙️ Crear app
-const app = express();
-
-// 🧩 Middlewares base
-app.use(cors());
-app.use(express.json());
-
-// 📚 Swagger
-const swaggerDocument = YAML.load('./swagger.yaml');
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-// 🚦 Rutas
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-
-// 🚀 Conexión y sincronización con la DB
-const PORT = process.env.PORT || 5000;
-
 sequelize.authenticate()
+  .then(() => sequelize.sync({ alter: true }))
+  .then(() => crearAdminInicial())
   .then(() => {
-    console.log('✅ Conexión con la base de datos establecida');
-    return sequelize.sync({ alter: true }); // Crea o ajusta las tablas
-  })
-  .then(async () => {
-    console.log('🗄️ Tablas sincronizadas con éxito');
-
-    await crearAdminInicial(); // ✅ Ejecutar creación del admin inicial
-
     app.listen(PORT, () => {
       const swaggerURL = `http://localhost:${PORT}/api-docs`;
       console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
       console.log(`📚 Swagger UI → ${swaggerURL}`);
-      open(swaggerURL); // Abre la documentación automáticamente
+      open(swaggerURL);
     });
   })
   .catch((err) => {
-    console.error('❌ Error al sincronizar tablas o conectar a la DB:', err);
+    console.error('❌ Error al iniciar:', err);
   });
-
-  if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
-      const swaggerURL = `http://localhost:${PORT}/api-docs`;
-      console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-      open(swaggerURL);
-    });
-  }
-
-export default app;
