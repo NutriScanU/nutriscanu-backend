@@ -1,4 +1,3 @@
-// models/ClinicalProfile.js
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
 import User from './user.js';
@@ -23,10 +22,13 @@ const ClinicalProfile = sequelize.define('ClinicalProfile', {
   smoking_history: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  condition: {
+    type: DataTypes.STRING,
+    allowNull: false // 🔥 IMPORTANTE para que no falle el AnalysisLog
   }
 });
 
-// Asociación 1:1 con User
 User.hasOne(ClinicalProfile, { foreignKey: 'userId' });
 ClinicalProfile.belongsTo(User, { foreignKey: 'userId' });
 

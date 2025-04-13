@@ -193,6 +193,78 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
+          
+  /api/students/analyze-recommendation:
+    post:
+      summary: Enviar hábitos y generar recomendación personalizada
+      tags: [Estudiante]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [habits]
+              properties:
+                habits:
+                  type: object
+                  properties:
+                    comidas_dia:
+                      type: string
+                    frutas_verduras:
+                      type: string
+                    alergias:
+                      type: string
+                    bebidas_azucaradas:
+                      type: string
+                    actividad_fisica:
+                      type: string
+                    objetivo_alimentacion:
+                      type: string
+                    ultraprocesados:
+                      type: string
+                    estres:
+                      type: string
+                    energia_fatiga:
+                      type: string
+                    comidas_fuera:
+                      type: string
+                  example:
+                    comidas_dia: "3"
+                    frutas_verduras: "2-3"
+                    alergias: "Intolerancia a la lactosa"
+                    bebidas_azucaradas: "1-2 veces por semana"
+                    actividad_fisica: "Moderado"
+                    objetivo_alimentacion: "Bajar"
+                    ultraprocesados: "3+ veces"
+                    estres: "Alto"
+                    energia_fatiga: "A veces"
+                    comidas_fuera: "3-5 veces por semana"
+      responses:
+        '201':
+          description: Recomendaciones generadas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Recomendaciones generadas y guardadas correctamente 🧠🍽️
+                  condition:
+                    type: string
+                    example: Anemia
+                  recommendations:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Hierro", "Vitamina C", "Fibra"]
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
 
   /api/students/analysis-history:
     get:
