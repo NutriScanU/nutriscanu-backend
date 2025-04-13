@@ -11,10 +11,15 @@ const AnalysisLog = sequelize.define('AnalysisLog', {
   recommendations: {
     type: DataTypes.ARRAY(DataTypes.STRING),
     defaultValue: []
+  },
+  habits: {
+    type: DataTypes.JSONB,
+    allowNull: true
   }
 }, {
   timestamps: true
 });
+
 
 User.hasMany(AnalysisLog, { foreignKey: 'userId' });
 AnalysisLog.belongsTo(User, { foreignKey: 'userId' });
