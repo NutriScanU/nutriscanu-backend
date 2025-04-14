@@ -193,7 +193,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
-          
   /api/students/analyze-recommendation:
     post:
       summary: Enviar hábitos y generar recomendación personalizada
@@ -677,31 +676,43 @@ components:
         
     ClinicalProfileInput:
       type: object
-      required: [age, gender]
+      required:
+        - age
+        - gender
+        - bmi
+        - hbA1c
+        - blood_glucose_level
+        - hemoglobin
+        - insulin
+        - triglycerides
+        - hematocrit
+        - red_blood_cells
+        - smoking_history
       properties:
-        age:
-          type: integer
-        gender:
-          type: string
-          enum: [Male, Female]
-        bmi:
-          type: number
-        hbA1c:
-          type: number
-        blood_glucose_level:
-          type: integer
-        hemoglobin:
-          type: number
-        insulin:
-          type: number
-        triglycerides:
-          type: integer
-        hematocrit:
-          type: number
-        red_blood_cells:
-          type: number
-        smoking_history:
-          type: string
+        age: { type: number }
+        gender: { type: string, enum: [Male, Female] }
+        bmi: { type: number }
+        hbA1c: { type: number }
+        blood_glucose_level: { type: number }
+        hemoglobin: { type: number }
+        insulin: { type: number }
+        triglycerides: { type: number }
+        hematocrit: { type: number }
+        red_blood_cells: { type: number }
+        smoking_history: { type: string, enum: [Never, Former, Current, Ever, Not Current, No Info] }
+      example:
+        age: 22
+        gender: Male
+        bmi: 26.7
+        hbA1c: 5.9
+        blood_glucose_level: 115
+        hemoglobin: 14.2
+        insulin: 16.5
+        triglycerides: 170
+        hematocrit: 43
+        red_blood_cells: 5.2
+        smoking_history: Former
+
           
     AnalysisLog:
       type: object
