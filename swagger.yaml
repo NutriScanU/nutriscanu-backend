@@ -68,6 +68,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/ServerError'
+  
   /api/auth/forgot-password:
     post:
       summary: Solicitar recuperación de contraseña
@@ -193,6 +194,98 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
+  /api/students/analyze-recommendation:
+    post:
+      summary: Enviar hábitos y generar recomendación personalizada
+      tags: [Estudiante]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [habits]
+              properties:
+                habits:
+                  type: object
+                  properties:
+                    comidas_dia:
+                      type: string
+                    frutas_verduras:
+                      type: string
+                    alergias:
+                      type: string
+                    bebidas_azucaradas:
+                      type: string
+                    actividad_fisica:
+                      type: string
+                    objetivo_alimentacion:
+                      type: string
+                    ultraprocesados:
+                      type: string
+                    estres:
+                      type: string
+                    energia_fatiga:
+                      type: string
+                    comidas_fuera:
+                      type: string
+                  example:
+                    comidas_dia: "3"
+                    frutas_verduras: "2-3"
+                    alergias: "Intolerancia a la lactosa"
+                    bebidas_azucaradas: "1-2 veces por semana"
+                    actividad_fisica: "Moderado"
+                    objetivo_alimentacion: "Bajar"
+                    ultraprocesados: "3+ veces"
+                    estres: "Alto"
+                    energia_fatiga: "A veces"
+                    comidas_fuera: "3-5 veces por semana"
+      responses:
+        '201':
+          description: Recomendaciones generadas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Recomendaciones generadas y guardadas correctamente 🧠🍽️
+                  condition:
+                    type: string
+                    example: Anemia
+                  recommendations:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Hierro", "Vitamina C", "Fibra"]
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/students/analysis-history:
+    get:
+      summary: Ver historial de análisis del estudiante
+      tags: [Estudiante]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Historial recuperado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  history:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AnalysisLog'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
 
   /api/admin/users:
     get:
@@ -556,11 +649,11 @@ components:
     LoginRequest:
       type: object
       properties:
-        document_number: { type: string }
+        email: { type: string }
         password: { type: string }
-      required: [document_number, password]
+      required: [email, password]
       example:
-        document_number: "12345678"
+        email: "luis@example.com"
         password: clave123
 
     UpdateUserRequest:
@@ -584,31 +677,58 @@ components:
         
     ClinicalProfileInput:
       type: object
-      required: [age, gender]
+      required:
+        - age
+        - gender
+        - bmi
+        - hbA1c
+        - blood_glucose_level
+        - hemoglobin
+        - insulin
+        - triglycerides
+        - hematocrit
+        - red_blood_cells
+        - smoking_history
       properties:
-        age:
+        age: { type: number }
+        gender: { type: string, enum: [Male, Female] }
+        bmi: { type: number }
+        hbA1c: { type: number }
+        blood_glucose_level: { type: number }
+        hemoglobin: { type: number }
+        insulin: { type: number }
+        triglycerides: { type: number }
+        hematocrit: { type: number }
+        red_blood_cells: { type: number }
+        smoking_history: { type: string, enum: [Never, Former, Current, Ever, Not Current, No Info] }
+      example:
+        age: 22
+        gender: Male
+        bmi: 26.7
+        hbA1c: 5.9
+        blood_glucose_level: 115
+        hemoglobin: 14.2
+        insulin: 16.5
+        triglycerides: 170
+        hematocrit: 43
+        red_blood_cells: 5.2
+        smoking_history: Former
+
+          
+    AnalysisLog:
+      type: object
+      properties:
+        id:
           type: integer
-        gender:
+        condition:
           type: string
-          enum: [Male, Female]
-        bmi:
-          type: number
-        hbA1c:
-          type: number
-        blood_glucose_level:
-          type: integer
-        hemoglobin:
-          type: number
-        insulin:
-          type: number
-        triglycerides:
-          type: integer
-        hematocrit:
-          type: number
-        red_blood_cells:
-          type: number
-        smoking_history:
+        recommendations:
+          type: array
+          items:
+            type: string
+        createdAt:
           type: string
+          format: date-time
 
     ChangePasswordRequest:
       type: object
