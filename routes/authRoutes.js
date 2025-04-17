@@ -7,9 +7,11 @@ import {   register,
     verifyResetCode,
     resetPasswordWithCode,
     debugGetResetCode,
+    resetPasswordWithToken 
      } from '../controllers/authController.js';
 
 import authMiddleware from '../middleware/authMiddleware.js';
+
 
 const router = express.Router();
 
@@ -29,6 +31,6 @@ router.post('/reset-password', resetPasswordWithCode);   // Paso 3: Cambia contr
 
 
 router.get('/debug-reset/:email', debugGetResetCode);
-
+router.post('/reset-password/:token', resetPasswordWithToken);
 
 export default router;

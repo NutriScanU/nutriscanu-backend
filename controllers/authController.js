@@ -5,6 +5,9 @@ import { Op } from 'sequelize';
 import User from '../models/user.js';
 import capitalize from '../utils/capitalize.js';
 import { sendResetPasswordCodeEmail } from '../utils/emailSender.js'; 
+import { v4 as uuidv4 } from 'uuid';
+import { sendResetPasswordEmail } from '../services/emailService.js';
+
 
 
 // 📌 Registro de usuario
@@ -206,36 +209,94 @@ export const changePassword = async (req, res) => {
 };
 
 
+export const resetPasswordWithToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { new_password, confirm_password } = req.body;
+
+    if (!new_password || !confirm_password) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+
+    if (new_password.length < 6) {
+      return res.status(400).json({ error: 'Contraseña muy corta' });
+    }
+
+    if (new_password !== confirm_password) {
+      return res.status(400).json({ error: 'Las contraseñas no coinciden' });
+    }
+
+    const user = await User.findOne({
+      where: {
+        reset_token: token,
+        reset_token_expires: {
+          [Op.gt]: new Date()
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Token inválido o expirado' });
+    }
+
+    user.password = await bcrypt.hash(new_password, 10);
+    user.reset_token = null;
+    user.reset_token_expires = null;
+    user.mustChangePassword = false;
+
+    await user.save();
+
+    res.json({ message: 'Contraseña restablecida correctamente ✅' });
+  } catch (error) {
+    console.error('❌ Error en resetPasswordWithToken:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
-  if (!email) return res.status(400).json({ message: "Correo es requerido" });
+  if (!email)
+    return res.status(400).json({ message: "El correo es obligatorio" });
 
   try {
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
       return res.status(200).json({
-        message: "Si el correo existe, recibirás un código.",
+        message: "Si el correo está registrado, recibirás instrucciones en tu correo.",
         obfuscatedEmail: "*****"
       });
     }
 
-    const code = Math.floor(10000 + Math.random() * 90000).toString();
-    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
+    // 🆕 Generar token único
+    const token = uuidv4();
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
 
-    await user.update({ reset_code: code, reset_code_expires: expires });
+    user.reset_token = token;
+    user.reset_token_expires = expires;
+    await user.save();
 
-    await sendResetPasswordCodeEmail(user.email, code);
+    // 📨 Enviar correo personalizado
+    const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+    await sendResetPasswordEmail(user.email, fullName, token);
 
-    const obfuscated = "*****" + email.slice(-7);
-    return res.status(200).json({ message: "Código enviado", obfuscatedEmail: obfuscated });
+    // 🟩 Enmascarar email para respuesta
+    const partes = email.split("@");
+    const visible = partes[0].slice(-2);
+    const obfuscated = "*****" + visible + "@" + partes[1];
+
+    res.status(200).json({
+      message: "Correo enviado con enlace de recuperación",
+      obfuscatedEmail: obfuscated
+    });
 
   } catch (error) {
     console.error("forgotPassword error:", error);
-    return res.status(500).json({ message: "Error interno al generar el código" });
+    res.status(500).json({ message: "Error interno al procesar la solicitud" });
   }
 };
+
 
 
 export const verifyResetCode = async (req, res) => {
@@ -361,9 +422,9 @@ export const debugGetResetCode = async (req, res) => {
 
     res.json({
       email: user.email,
-      reset_code: user.reset_code || null,
-      reset_code_expires: user.reset_code_expires
-        ? new Date(user.reset_code_expires).toISOString()
+      reset_token: user.reset_token || null,
+      reset_token_expires: user.reset_token_expires
+        ? new Date(user.reset_token_expires).toISOString()
         : null,
       now: new Date().toISOString()
     });
@@ -373,3 +434,4 @@ export const debugGetResetCode = async (req, res) => {
     res.status(500).json({ message: "Error interno" });
   }
 };
+

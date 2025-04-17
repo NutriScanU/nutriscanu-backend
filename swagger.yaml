@@ -101,7 +101,7 @@ paths:
 
   /api/auth/forgot-password:
     post:
-      summary: Enviar código de recuperación por correo
+      summary: Solicitar enlace para restablecer contraseña
       tags:
         - Auth
       requestBody:
@@ -110,13 +110,15 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - email
               properties:
                 email:
                   type: string
                   example: usuario@gmail.com
       responses:
         '200':
-          description: Código enviado
+          description: Enlace de recuperación enviado si el correo está registrado
           content:
             application/json:
               schema:
@@ -124,44 +126,12 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Código enviado
+                    example: Correo enviado con enlace de recuperación
                   obfuscatedEmail:
                     type: string
-                    example: "****os@gmail.com"
-        '500':
-          description: Error interno
-  
-
-    post:
-      summary: Verificar código de recuperación
-      tags:
-        - Auth
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  example: usuario@gmail.com
-                code:
-                  type: string
-                  example: "12345"
-      responses:
-        '200':
-          description: Código válido
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Código válido
+                    example: "*****os@gmail.com"
         '400':
-          description: Código inválido o expirado
+          description: Campo obligatorio faltante
           content:
             application/json:
               schema:
@@ -169,7 +139,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Código inválido
+                    example: El correo es obligatorio
+        '500':
+          description: Error interno del servidor
 
   /api/auth/reset-password:
     post:
@@ -237,6 +209,58 @@ paths:
                     example: "2025-04-17T08:20:00.000Z"
         '404':
           description: Usuario no encontrado
+        '500':
+          description: Error interno del servidor
+
+  /api/auth/reset-password/{token}:
+    post:
+      summary: Cambiar contraseña usando enlace con token
+      tags:
+        - Auth
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Token único enviado al correo del usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+                - confirm_password
+              properties:
+                password:
+                  type: string
+                  example: NuevaClave123
+                confirm_password:
+                  type: string
+                  example: NuevaClave123
+      responses:
+        '200':
+          description: Contraseña actualizada con éxito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Contraseña actualizada con éxito
+        '400':
+          description: Token inválido, expirado o contraseñas no coinciden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token inválido o expirado
         '500':
           description: Error interno del servidor
 
