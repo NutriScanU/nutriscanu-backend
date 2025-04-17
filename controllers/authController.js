@@ -109,13 +109,13 @@ export const register = async (req, res) => {
 // 🔐 Login
 export const login = async (req, res) => {
   try {
-    const { document_number, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!document_number || !password) {
-      return res.status(400).json({ error: 'Documento y contraseña son requeridos.' });
+    if (!email  || !password) {
+      return res.status(400).json({ error: 'Correo y contraseña son requeridos.' });
     }
 
-    const user = await User.findOne({ where: { document_number } });
+    const user = await User.findOne({ where: { email  } });
     if (!user) {
       return res.status(400).json({ error: 'Usuario no encontrado.' });
     }

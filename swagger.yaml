@@ -68,6 +68,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/ServerError'
+  
   /api/auth/forgot-password:
     post:
       summary: Solicitar recuperación de contraseña
@@ -648,11 +649,11 @@ components:
     LoginRequest:
       type: object
       properties:
-        document_number: { type: string }
+        email: { type: string }
         password: { type: string }
-      required: [document_number, password]
+      required: [email, password]
       example:
-        document_number: "12345678"
+        email: "luis@example.com"
         password: clave123
 
     UpdateUserRequest:
