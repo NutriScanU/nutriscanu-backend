@@ -69,9 +69,9 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
   
-  /api/auth/forgot-password:
+  /api/auth/reset-password:
     post:
-      summary: Solicitar recuperación de contraseña
+      summary: Cambiar contraseña con código de verificación
       tags: [Auth]
       requestBody:
         required: true
@@ -82,17 +82,98 @@ paths:
               properties:
                 email:
                   type: string
+                code:
+                  type: string
+                password:
+                  type: string
+                confirm_password:
+                  type: string
+              example:
+                email: usuario@gmail.com
+                code: "12345"
+                password: NuevaClave123
+                confirm_password: NuevaClave123
       responses:
         '200':
-          description: Token generado
-        '404':
-          $ref: '#/components/responses/NotFound'
+          description: Contraseña cambiada con éxito
+        '400':
+          description: Código inválido o contraseñas no coinciden
+
+  /api/auth/forgot-password:
+    post:
+      summary: Enviar código de recuperación por correo
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: usuario@gmail.com
+      responses:
+        '200':
+          description: Código enviado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Código enviado
+                  obfuscatedEmail:
+                    type: string
+                    example: "****os@gmail.com"
         '500':
-          $ref: '#/components/responses/ServerError'
+          description: Error interno
+  
+
+    post:
+      summary: Verificar código de recuperación
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: usuario@gmail.com
+                code:
+                  type: string
+                  example: "12345"
+      responses:
+        '200':
+          description: Código válido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Código válido
+        '400':
+          description: Código inválido o expirado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Código inválido
 
   /api/auth/reset-password:
     post:
-      summary: Establecer nueva contraseña con token
+      summary: Cambiar contraseña con código de verificación
       tags: [Auth]
       requestBody:
         required: true
@@ -100,21 +181,64 @@ paths:
           application/json:
             schema:
               type: object
-              required: [token, new_password, confirm_password]
               properties:
-                token:
+                email:
                   type: string
-                new_password:
+                code:
+                  type: string
+                password:
                   type: string
                 confirm_password:
                   type: string
+              example:
+                email: usuario@gmail.com
+                code: "12345"
+                password: NuevaClave123
+                confirm_password: NuevaClave123
       responses:
         '200':
-          description: Contraseña restablecida correctamente
+          description: Contraseña cambiada con éxito
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: Código inválido o contraseñas no coinciden
+
+  /api/auth/debug-reset/{email}:
+    get:
+      summary: 🔍 Obtener código de recuperación y expiración (solo para pruebas)
+      tags:
+        - Debug
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+          example: reyjosue001@gmail.com
+      responses:
+        '200':
+          description: Código actual y expiración
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+                    example: reyjosue001@gmail.com
+                  reset_code:
+                    type: string
+                    example: "92430"
+                  reset_code_expires:
+                    type: string
+                    format: date-time
+                    example: "2025-04-17T08:30:00.000Z"
+                  now:
+                    type: string
+                    format: date-time
+                    example: "2025-04-17T08:20:00.000Z"
+        '404':
+          description: Usuario no encontrado
         '500':
-          $ref: '#/components/responses/ServerError'
+          description: Error interno del servidor
 
   /api/auth/profile:
     get:
@@ -194,6 +318,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
+  
   /api/students/analyze-recommendation:
     post:
       summary: Enviar hábitos y generar recomendación personalizada

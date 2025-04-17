@@ -47,11 +47,27 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+
+
+    reset_code: {
+      type: DataTypes.STRING(6),
+      allowNull: true,
+      validate: {
+        isNumeric: true,
+        len: [5, 6]
+      }
+    },
+    reset_code_expires: {
+      type: DataTypes.DATE,
+      allowNull: true
+    }
+    
+    
     
   },
   {
     timestamps: true,
-    paranoid: true, // 👈 Esto activa soft delete
+    paranoid: true, 
     deletedAt: 'deletedAt',
   }
 );

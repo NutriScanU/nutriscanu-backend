@@ -4,6 +4,8 @@ import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import User from '../models/user.js';
 import capitalize from '../utils/capitalize.js';
+import { sendResetPasswordCodeEmail } from '../utils/emailSender.js'; 
+
 
 // 📌 Registro de usuario
 export const register = async (req, res) => {
@@ -205,34 +207,100 @@ export const changePassword = async (req, res) => {
 
 
 export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) return res.status(400).json({ message: "Correo es requerido" });
+
   try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: 'El correo es obligatorio' });
-    }
-
     const user = await User.findOne({ where: { email } });
+
     if (!user) {
-      return res.status(404).json({ error: 'No existe un usuario con ese correo' });
+      return res.status(200).json({
+        message: "Si el correo existe, recibirás un código.",
+        obfuscatedEmail: "*****"
+      });
     }
 
-    // 🎯 Generar token aleatorio y expiración
-    const token = crypto.randomBytes(20).toString('hex');
-    const expires = Date.now() + 1000 * 60 * 15; // 15 min
+    const code = Math.floor(10000 + Math.random() * 90000).toString();
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
 
-    user.resetPasswordToken = token;
-    user.resetPasswordExpires = new Date(expires);
-    await user.save();
+    await user.update({ reset_code: code, reset_code_expires: expires });
 
-    // En un sistema real enviaríamos esto por correo
-    return res.status(200).json({
-      message: 'Token de recuperación generado',
-      token: token // solo para pruebas
-    });
+    await sendResetPasswordCodeEmail(user.email, code);
+
+    const obfuscated = "*****" + email.slice(-7);
+    return res.status(200).json({ message: "Código enviado", obfuscatedEmail: obfuscated });
+
   } catch (error) {
-    console.error('❌ Error en forgotPassword:', error);
-    res.status(500).json({ error: 'Error interno' });
+    console.error("forgotPassword error:", error);
+    return res.status(500).json({ message: "Error interno al generar el código" });
+  }
+};
+
+
+export const verifyResetCode = async (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code)
+    return res.status(400).json({ message: "Correo y código son requeridos" });
+
+  try {
+    const user = await User.findOne({ where: { email } });
+
+    if (
+      !user ||
+      !user.reset_code ||
+      String(user.reset_code) !== String(code) ||
+      Date.now() > new Date(user.reset_code_expires)
+    ) {
+      return res.status(400).json({ message: "Código inválido o expirado" });
+    }
+
+    return res.status(200).json({ message: "Código válido" });
+
+  } catch (error) {
+    console.error("verifyResetCode error:", error);
+    return res.status(500).json({ message: "Error interno al verificar código" });
+  }
+};
+
+
+
+export const resetPasswordWithCode = async (req, res) => {
+  const { email, code, password, confirm_password } = req.body;
+
+  if (!email || !code || !password || !confirm_password)
+    return res.status(400).json({ message: "Todos los campos son obligatorios" });
+
+  if (password !== confirm_password)
+    return res.status(400).json({ message: "Las contraseñas no coinciden" });
+
+  try {
+    const user = await User.findOne({ where: { email } });
+
+    if (
+      !user ||
+      !user.reset_code ||
+      String(user.reset_code) !== String(code) ||
+      Date.now() > new Date(user.reset_code_expires)
+    ) {
+      return res.status(400).json({ message: "Código inválido o expirado" });
+    }
+
+    const bcrypt = await import("bcryptjs");
+    const hashed = await bcrypt.default.hash(password, 10);
+
+    await user.update({
+      password: hashed,
+      reset_code: null,
+      reset_code_expires: null
+    });
+
+    return res.status(200).json({ message: "Contraseña actualizada" });
+
+  } catch (error) {
+    console.error("resetPasswordWithCode error:", error);
+    return res.status(500).json({ message: "Error al actualizar contraseña" });
   }
 };
 
@@ -277,5 +345,31 @@ export const resetPassword = async (req, res) => {
   } catch (error) {
     console.error('❌ Error en resetPassword:', error);
     res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+
+export const debugGetResetCode = async (req, res) => {
+  const { email } = req.params;
+
+  try {
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    res.json({
+      email: user.email,
+      reset_code: user.reset_code || null,
+      reset_code_expires: user.reset_code_expires
+        ? new Date(user.reset_code_expires).toISOString()
+        : null,
+      now: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error("🔥 Error en debugGetResetCode:", error);
+    res.status(500).json({ message: "Error interno" });
   }
 };
