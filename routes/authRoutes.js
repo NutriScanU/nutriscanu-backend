@@ -7,7 +7,8 @@ import {   register,
     verifyResetCode,
     resetPasswordWithCode,
     debugGetResetCode,
-    resetPasswordWithToken 
+    resetPasswordWithToken,
+    checkEmailExists 
      } from '../controllers/authController.js';
 
 import authMiddleware from '../middleware/authMiddleware.js';
@@ -18,7 +19,7 @@ const router = express.Router();
 router.post('/register', register);
 router.post('/login', login);
 
-// 🔐 NUEVA RUTA protegida para perfil
+// 🔐 NUEVA RUTA protegida para perfil  
 router.get('/profile', authMiddleware, getProfile);
 
 // Cambiar contraseña protegida
@@ -32,5 +33,8 @@ router.post('/reset-password', resetPasswordWithCode);   // Paso 3: Cambia contr
 
 router.get('/debug-reset/:email', debugGetResetCode);
 router.post('/reset-password/:token', resetPasswordWithToken);
+
+
+router.post('/check-email', checkEmailExists);
 
 export default router;

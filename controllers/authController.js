@@ -435,3 +435,20 @@ export const debugGetResetCode = async (req, res) => {
   }
 };
 
+
+
+export const checkEmailExists = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (user) {
+      return res.status(200).json({ exists: true });
+    } else {
+      return res.status(200).json({ exists: false });  // ✅ CORREGIDO
+    }
+  } catch (error) {
+    console.error("Error al verificar el correo:", error);
+    return res.status(500).json({ message: "Error del servidor" });
+  }
+};

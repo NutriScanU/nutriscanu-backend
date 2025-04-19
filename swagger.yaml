@@ -234,7 +234,7 @@ paths:
                 - password
                 - confirm_password
               properties:
-                password:
+                new_password:
                   type: string
                   example: NuevaClave123
                 confirm_password:
@@ -263,6 +263,42 @@ paths:
                     example: Token inválido o expirado
         '500':
           description: Error interno del servidor
+
+
+  /api/auth/check-email:
+    post:
+      tags:
+        - Autenticación
+      summary: Verifica si un correo electrónico ya está registrado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: usuario@correo.com
+      responses:
+        '200':
+          description: Resultado de la verificación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                    example: true
+        '400':
+          description: El campo email es obligatorio
+        '500':
+          description: Error interno del servidor
+
+
+
+
 
   /api/auth/profile:
     get:
