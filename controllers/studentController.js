@@ -5,32 +5,20 @@ import AnalysisLog from '../models/AnalysisLog.js';
 /* ────────────────────────────────────────────────
  📥 REGISTRO DE DATOS CLÍNICOS (con predicción Flask)
 ──────────────────────────────────────────────── */
-export const registerClinic = async (req, res) => {
+const registerClinic = async (req, res) => {
   try {
     const userId = req.user.userId;
-
-    // Verificar si ya existe un perfil clínico
     const existing = await ClinicalProfile.findOne({ where: { userId } });
     if (existing) {
       return res.status(400).json({ error: 'Perfil clínico ya registrado' });
     }
 
-    // Extraer datos del body
     const {
-      age,
-      gender,
-      bmi,
-      hbA1c,
-      blood_glucose_level,
-      hemoglobin,
-      insulin,
-      triglycerides,
-      hematocrit,
-      red_blood_cells,
-      smoking_history
+      age, gender, bmi, hbA1c, blood_glucose_level,
+      hemoglobin, insulin, triglycerides,
+      hematocrit, red_blood_cells, smoking_history
     } = req.body;
 
-    // Validar campos numéricos
     const camposNumericos = {
       age, bmi, hbA1c, blood_glucose_level,
       hemoglobin, insulin, triglycerides,
@@ -43,50 +31,28 @@ export const registerClinic = async (req, res) => {
       }
     }
 
-    // Validar género
     const validGenders = ['Male', 'Female'];
     if (!validGenders.includes(gender)) {
       return res.status(400).json({ error: 'Género inválido. Usa "Male" o "Female".' });
     }
 
-    // Validar tabaquismo
     const validSmoking = ["Never", "Former", "Current", "Ever", "Not Current", "No Info"];
     if (!validSmoking.includes(smoking_history)) {
       return res.status(400).json({ error: 'Historial de tabaquismo inválido' });
     }
 
-    // Enviar JSON a Flask (no como array)
     const flaskResponse = await axios.post('http://localhost:8000/predict', {
-      age,
-      gender,
-      bmi,
-      hbA1c,
-      blood_glucose_level,
-      hemoglobin,
-      insulin,
-      triglycerides,
-      hematocrit,
-      red_blood_cells,
-      smoking_history
+      age, gender, bmi, hbA1c, blood_glucose_level,
+      hemoglobin, insulin, triglycerides,
+      hematocrit, red_blood_cells, smoking_history
     });
 
     const condition = flaskResponse.data.condition;
 
-    // Guardar perfil clínico en DB
     const profile = await ClinicalProfile.create({
-      userId,
-      age,
-      gender,
-      bmi,
-      hbA1c,
-      blood_glucose_level,
-      hemoglobin,
-      insulin,
-      triglycerides,
-      hematocrit,
-      red_blood_cells,
-      smoking_history,
-      condition
+      userId, age, gender, bmi, hbA1c, blood_glucose_level,
+      hemoglobin, insulin, triglycerides,
+      hematocrit, red_blood_cells, smoking_history, condition
     });
 
     return res.status(201).json({
@@ -104,7 +70,7 @@ export const registerClinic = async (req, res) => {
 /* ────────────────────────────────────────────────
  📚 OBTENER HISTORIAL DE ANÁLISIS DEL ESTUDIANTE
 ──────────────────────────────────────────────── */
-export const getAnalysisHistory = async (req, res) => {
+const getAnalysisHistory = async (req, res) => {
   try {
     const userId = req.user.userId;
 
@@ -123,7 +89,7 @@ export const getAnalysisHistory = async (req, res) => {
 /* ────────────────────────────────────────────────
  🤖 ENVIAR HÁBITOS Y OBTENER RECOMENDACIONES
 ──────────────────────────────────────────────── */
-export const analyzeRecommendation = async (req, res) => {
+const analyzeRecommendation = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { habits } = req.body;
@@ -166,8 +132,114 @@ export const analyzeRecommendation = async (req, res) => {
   }
 };
 
-export default {
+const getClinicProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const profile = await ClinicalProfile.findOne({ where: { userId } });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Perfil clínico no encontrado' });
+    }
+
+    return res.status(200).json(profile);
+  } catch (error) {
+    console.error('❌ Error al obtener el perfil clínico:', error.message);
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+const updateClinicProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const profile = await ClinicalProfile.findOne({ where: { userId } });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Perfil clínico no encontrado' });
+    }
+
+    const fieldsToUpdate = [
+      'age', 'gender', 'bmi', 'hbA1c', 'blood_glucose_level',
+      'hemoglobin', 'insulin', 'triglycerides', 'hematocrit',
+      'red_blood_cells', 'smoking_history', 'condition'
+    ];
+
+    fieldsToUpdate.forEach(field => {
+      if (req.body[field] !== undefined) {
+        profile[field] = req.body[field];
+      }
+    });
+
+    await profile.save();
+    return res.status(200).json({ message: 'Perfil clínico actualizado', profile });
+
+  } catch (error) {
+    console.error('❌ Error al actualizar perfil clínico:', error.message);
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+const deleteClinicProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const profile = await ClinicalProfile.findOne({ where: { userId } });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Perfil clínico no encontrado' });
+    }
+
+    await profile.destroy();
+    return res.status(204).send();
+
+  } catch (error) {
+    console.error('❌ Error al eliminar el perfil clínico:', error.message);
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+const getAnalysisById = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const analysisId = req.params.id;
+
+    const analysis = await AnalysisLog.findOne({ where: { id: analysisId, userId } });
+
+    if (!analysis) {
+      return res.status(404).json({ error: 'Análisis no encontrado' });
+    }
+
+    return res.status(200).json(analysis);
+  } catch (error) {
+    console.error('❌ Error al obtener el análisis:', error.message);
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+const deleteAnalysisById = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const analysisId = req.params.id;
+
+    const analysis = await AnalysisLog.findOne({ where: { id: analysisId, userId } });
+
+    if (!analysis) {
+      return res.status(404).json({ error: 'Análisis no encontrado' });
+    }
+
+    await analysis.destroy();
+    return res.status(204).send();
+  } catch (error) {
+    console.error('❌ Error al eliminar el análisis:', error.message);
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+export {
   registerClinic,
   getAnalysisHistory,
-  analyzeRecommendation
+  analyzeRecommendation,
+  getClinicProfile,
+  updateClinicProfile,
+  deleteClinicProfile,
+  getAnalysisById,
+  deleteAnalysisById
 };
