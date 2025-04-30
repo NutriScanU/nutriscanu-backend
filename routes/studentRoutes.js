@@ -10,8 +10,11 @@ import {
   updateClinicProfile,
   deleteClinicProfile,
   getAnalysisById,
-  deleteAnalysisById
+  deleteAnalysisById,
+  getLatestRecommendation
 } from '../controllers/studentController.js';
+
+
 
 
 
@@ -29,5 +32,11 @@ router.post('/register-clinic', authMiddleware, isStudent, registerClinic);
 router.get('/clinic-profile', authMiddleware, isStudent, getClinicProfile);
 router.put('/clinic-profile', authMiddleware, isStudent, updateClinicProfile);
 router.delete('/clinic-profile', authMiddleware, isStudent, deleteClinicProfile);
+
+
+
+
+// 📚 Nueva ruta para obtener la última recomendación generad
+router.get('/recommendations', authMiddleware, isStudent, getLatestRecommendation);
 
 export default router;

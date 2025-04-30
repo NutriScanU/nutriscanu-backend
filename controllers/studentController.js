@@ -233,6 +233,33 @@ const deleteAnalysisById = async (req, res) => {
   }
 };
 
+// 📚 Nueva función para obtener la última recomendación generada
+const getLatestRecommendation = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const latestAnalysis = await AnalysisLog.findOne({
+      where: { userId },
+      order: [['createdAt', 'DESC']]
+    });
+
+    if (!latestAnalysis) {
+      return res.status(404).json({ error: 'No se encontraron recomendaciones para este usuario.' });
+    }
+
+    return res.status(200).json({
+      condition: latestAnalysis.condition,
+      recommendations: latestAnalysis.recommendations
+    });
+
+  } catch (error) {
+    console.error('❌ Error al obtener la última recomendación:', error.message || error);
+    return res.status(500).json({ error: 'Error al obtener la última recomendación' });
+  }
+};
+
+
+
 export {
   registerClinic,
   getAnalysisHistory,
@@ -241,5 +268,6 @@ export {
   updateClinicProfile,
   deleteClinicProfile,
   getAnalysisById,
-  deleteAnalysisById
+  deleteAnalysisById,
+  getLatestRecommendation
 };

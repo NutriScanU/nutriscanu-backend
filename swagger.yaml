@@ -506,6 +506,42 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '500': { $ref: '#/components/responses/ServerError' }
 
+  /api/students/recommendations:
+    get:
+      summary: Obtener última recomendación generada del estudiante
+      tags: [Estudiante]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Última recomendación encontrada correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  condition:
+                    type: string
+                    example: Diabetes
+                  recommendations:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Verduras sin almidón", "Vitamina C"]
+        '404':
+          description: No se encontró recomendación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: No se encontraron recomendaciones para este usuario.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
 
 
