@@ -11,8 +11,11 @@ import {
   deleteClinicProfile,
   getAnalysisById,
   deleteAnalysisById,
-  getLatestRecommendation
+  getLatestRecommendation,
+  getUserProfile,
+  updateUserProfile
 } from '../controllers/studentController.js';
+
 
 
 
@@ -38,5 +41,15 @@ router.delete('/clinic-profile', authMiddleware, isStudent, deleteClinicProfile)
 
 // 📚 Nueva ruta para obtener la última recomendación generad
 router.get('/recommendations', authMiddleware, isStudent, getLatestRecommendation);
+
+
+
+
+
+
+// 🧑‍🎓 Obtener y actualizar datos del estudiante autenticado
+router.get('/profile', authMiddleware, isStudent, getUserProfile);
+router.put('/profile', authMiddleware, isStudent, updateUserProfile);
+
 
 export default router;

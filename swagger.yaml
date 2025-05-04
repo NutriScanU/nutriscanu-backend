@@ -544,6 +544,45 @@ paths:
           $ref: '#/components/responses/ServerError'
 
 
+  /api/students/profile:
+    get:
+      summary: Obtener perfil del estudiante autenticado
+      tags: [Estudiante]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Datos del estudiante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Estudiante no encontrado
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      summary: Actualizar perfil del estudiante autenticado
+      tags: [Estudiante]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStudentProfile'
+      responses:
+        '200':
+          description: Perfil actualizado correctamente
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
 
 
@@ -1076,3 +1115,36 @@ components:
         middle_name: Mejía
         document_number: "87654321"
         email: carlos.torres@example.com
+
+    StudentProfile:
+      type: object
+      properties:
+        id: { type: integer }
+        first_name: { type: string }
+        last_name: { type: string }
+        middle_name: { type: string }
+        document_number: { type: string }
+        email: { type: string }
+
+    UpdateStudentProfile:
+      type: object
+      required:
+        - first_name
+        - last_name
+        - middle_name
+        - email
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        middle_name:
+          type: string
+        email:
+          type: string
+          format: email
+      example:
+        first_name: Ana
+        last_name: Rodríguez
+        middle_name: Vega
+        email: ana.rod@example.com

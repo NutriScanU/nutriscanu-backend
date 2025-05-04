@@ -1,6 +1,7 @@
 import axios from 'axios';
 import ClinicalProfile from '../models/ClinicalProfile.js';
 import AnalysisLog from '../models/AnalysisLog.js';
+import User from '../models/user.js';
 
 /* ────────────────────────────────────────────────
  📥 REGISTRO DE DATOS CLÍNICOS (con predicción Flask)
@@ -257,7 +258,57 @@ const getLatestRecommendation = async (req, res) => {
     return res.status(500).json({ error: 'Error al obtener la última recomendación' });
   }
 };
+/* ────────────────────────────────────────────────
+ 👤 VER PERFIL DEL USUARIO AUTENTICADO
+──────────────────────────────────────────────── */
+const getUserProfile = async (req, res) => {
+  const userId = req.user.userId;
 
+  try {
+    const user = await User.findByPk(userId, {
+      attributes: ['first_name', 'last_name', 'middle_name', 'email', 'document_number', 'role']
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error('❌ Error al obtener perfil:', error);
+    return res.status(500).json({ error: 'Error al obtener el perfil del usuario.' });
+  }
+};
+
+/* ────────────────────────────────────────────────
+ ✏️ ACTUALIZAR PERFIL DEL USUARIO AUTENTICADO
+──────────────────────────────────────────────── */
+const updateUserProfile = async (req, res) => {
+  const userId = req.user.userId;
+  const { first_name, last_name, middle_name, email } = req.body;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+
+    // Validar si el nuevo correo ya está en uso por otro usuario
+    if (email && email !== user.email) {
+      const existingEmail = await User.findOne({ where: { email } });
+      if (existingEmail && existingEmail.id !== user.id) {
+        return res.status(400).json({ error: 'El correo ya está registrado por otro usuario.' });
+      }
+    }
+
+    await user.update({ first_name, last_name, middle_name, email });
+    return res.status(200).json({ message: 'Perfil actualizado correctamente.', user });
+
+  } catch (error) {
+    console.error('❌ Error al actualizar perfil:', error.message);
+    return res.status(500).json({ error: 'Error al actualizar el perfil del usuario.' });
+  }
+};
 
 
 export {
@@ -269,5 +320,8 @@ export {
   deleteClinicProfile,
   getAnalysisById,
   deleteAnalysisById,
-  getLatestRecommendation
+  getLatestRecommendation,
+  getUserProfile,
+  updateUserProfile
 };
+
