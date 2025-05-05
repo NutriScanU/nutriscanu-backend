@@ -8,8 +8,10 @@ import {   register,
     resetPasswordWithCode,
     debugGetResetCode,
     resetPasswordWithToken,
-    checkEmailExists 
-     } from '../controllers/authController.js';
+    checkEmailExists,
+    sendLoginCode,
+    loginWithCode 
+} from '../controllers/authController.js';
 
 import authMiddleware from '../middleware/authMiddleware.js';
 
@@ -33,6 +35,10 @@ router.post('/reset-password', resetPasswordWithCode);   // Paso 3: Cambia contr
 
 router.get('/debug-reset/:email', debugGetResetCode);
 router.post('/reset-password/:token', resetPasswordWithToken);
+
+router.post('/send-login-code', sendLoginCode);
+router.post('/login-with-code', loginWithCode);
+
 
 
 router.post('/check-email', checkEmailExists);

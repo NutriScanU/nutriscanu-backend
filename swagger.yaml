@@ -7,7 +7,7 @@ info:
 paths:
   /api/auth/register:
     post:
-      summary: Registro de usuario
+      summary: Registro de usuario.
       tags: [Auth]
       requestBody:
         required: true
@@ -17,14 +17,15 @@ paths:
               $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: Usuario registrado correctamente
+          description: Usuario registrado correctamente.
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/ServerError'
+
   /api/auth/login:
     post:
-      summary: Iniciar sesión
+      summary: Iniciar sesión.
       tags: [Auth]
       requestBody:
         required: true
@@ -34,7 +35,45 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Login exitoso
+          description: Login exitoso.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Token JWT de autenticación.
+                  mustChangePassword:
+                    type: boolean
+                    description: Indica si el usuario debe cambiar su contraseña.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/auth/login-with-code:
+    post:
+      summary: Iniciar sesión usando un código de acceso único (login sin contraseña)
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: usuario@correo.com
+                code:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: Sesión iniciada exitosamente
           content:
             application/json:
               schema:
@@ -43,16 +82,22 @@ paths:
                   token:
                     type: string
                     description: Token JWT de autenticación
-                  mustChangePassword:
-                    type: boolean
-                    description: Indica si el usuario debe cambiar su contraseña
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: Código inválido o expirado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Código inválido o expirado
         '500':
-          $ref: '#/components/responses/ServerError'
-  /api/auth/reset-password:
+          description: Error interno del servidor
+
+  /api/auth/send-login-code:
     post:
-      summary: Cambiar contraseña con código de verificación
+      summary: Solicitar código de acceso único (login sin contraseña)
       tags: [Auth]
       requestBody:
         required: true
@@ -60,30 +105,48 @@ paths:
           application/json:
             schema:
               type: object
+              required: [email]
               properties:
                 email:
                   type: string
-                code:
-                  type: string
-                password:
-                  type: string
-                confirm_password:
-                  type: string
-              example:
-                email: usuario@gmail.com
-                code: "12345"
-                password: NuevaClave123
-                confirm_password: NuevaClave123
+                  format: email
+                  example: usuario@correo.com
       responses:
         '200':
-          description: Contraseña cambiada con éxito
+          description: Código enviado exitosamente al correo registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Código enviado al correo."
         '400':
-          description: Código inválido o contraseñas no coinciden
+          description: Error, correo no encontrado o campo faltante
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Correo es obligatorio."
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error inesperado."
+
   /api/auth/forgot-password:
     post:
-      summary: Solicitar enlace para restablecer contraseña
-      tags:
-        - Auth
+      summary: Solicitar enlace para restablecer contraseña.
+      tags: [Auth]
       requestBody:
         required: true
         content:
@@ -98,7 +161,7 @@ paths:
                   example: usuario@gmail.com
       responses:
         '200':
-          description: Enlace de recuperación enviado si el correo está registrado
+          description: Enlace de recuperación enviado si el correo está registrado.
           content:
             application/json:
               schema:
@@ -106,101 +169,26 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Correo enviado con enlace de recuperación
+                    example: Correo enviado con enlace de recuperación.
                   obfuscatedEmail:
                     type: string
                     example: "*****os@gmail.com"
         '400':
-          description: Campo obligatorio faltante
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: El correo es obligatorio
+          description: El campo email es obligatorio.
         '500':
-          description: Error interno del servidor
-  /api/auth/reset-password:
-    post:
-      summary: Cambiar contraseña con código de verificación
-      tags: [Auth]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                code:
-                  type: string
-                password:
-                  type: string
-                confirm_password:
-                  type: string
-              example:
-                email: usuario@gmail.com
-                code: "12345"
-                password: NuevaClave123
-                confirm_password: NuevaClave123
-      responses:
-        '200':
-          description: Contraseña cambiada con éxito
-        '400':
-          description: Código inválido o contraseñas no coinciden
-  /api/auth/debug-reset/{email}:
-    get:
-      summary: 🔍 Obtener código de recuperación y expiración (solo para pruebas)
-      tags:
-        - Debug
-      parameters:
-        - name: email
-          in: path
-          required: true
-          schema:
-            type: string
-          example: reyjosue001@gmail.com
-      responses:
-        '200':
-          description: Código actual y expiración
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  email:
-                    type: string
-                    example: reyjosue001@gmail.com
-                  reset_code:
-                    type: string
-                    example: "92430"
-                  reset_code_expires:
-                    type: string
-                    format: date-time
-                    example: "2025-04-17T08:30:00.000Z"
-                  now:
-                    type: string
-                    format: date-time
-                    example: "2025-04-17T08:20:00.000Z"
-        '404':
-          description: Usuario no encontrado
-        '500':
-          description: Error interno del servidor
+          description: Error interno del servidor.
+
   /api/auth/reset-password/{token}:
     post:
-      summary: Cambiar contraseña usando enlace con token
-      tags:
-        - Auth
+      summary: Cambiar contraseña usando enlace con token.
+      tags: [Auth]
       parameters:
         - name: token
           in: path
           required: true
           schema:
             type: string
-          description: Token único enviado al correo del usuario
+          description: Token único enviado al correo del usuario.
       requestBody:
         required: true
         content:
@@ -208,7 +196,7 @@ paths:
             schema:
               type: object
               required:
-                - password
+                - new_password
                 - confirm_password
               properties:
                 new_password:
@@ -219,7 +207,7 @@ paths:
                   example: NuevaClave123
       responses:
         '200':
-          description: Contraseña actualizada con éxito
+          description: Contraseña actualizada con éxito.
           content:
             application/json:
               schema:
@@ -227,9 +215,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Contraseña actualizada con éxito
+                    example: Contraseña actualizada con éxito.
         '400':
-          description: Token inválido, expirado o contraseñas no coinciden
+          description: Token inválido, expirado o contraseñas no coinciden.
           content:
             application/json:
               schema:
@@ -237,49 +225,20 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Token inválido o expirado
+                    example: Token inválido o expirado.
         '500':
-          description: Error interno del servidor
-  /api/auth/check-email:
-    post:
-      tags:
-        - Autenticación
-      summary: Verifica si un correo electrónico ya está registrado
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  example: usuario@correo.com
-      responses:
-        '200':
-          description: Resultado de la verificación
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  exists:
-                    type: boolean
-                    example: true
-        '400':
-          description: El campo email es obligatorio
-        '500':
-          description: Error interno del servidor
+          description: Error interno del servidor.
+
   /api/auth/profile:
     get:
-      summary: Obtener perfil del usuario autenticado
-      description: Retorna los datos del usuario logueado usando su token JWT
+      summary: Obtener perfil del usuario autenticado.
+      description: Retorna los datos del usuario logueado usando su token JWT.
       tags: [Auth]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Perfil obtenido con éxito
+          description: Perfil obtenido con éxito.
           content:
             application/json:
               schema:
@@ -293,7 +252,39 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
+
   /api/auth/change-password:
+    put:
+      summary: Cambiar la contraseña del usuario autenticado.
+      description: Permite al usuario cambiar su contraseña.
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Contraseña actualizada correctamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Contraseña actualizada correctamente.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
     put:
       summary: Cambiar la contraseña del usuario autenticado
       description: Permite al usuario cambiar su contraseña. Si mustChangePassword es true, se actualiza a false.
@@ -505,7 +496,6 @@ paths:
                       $ref: '#/components/schemas/AnalysisLog'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '500': { $ref: '#/components/responses/ServerError' }
-
   /api/students/recommendations:
     get:
       summary: Obtener última recomendación generada del estudiante
@@ -542,8 +532,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
-
-
   /api/students/profile:
     get:
       summary: Obtener perfil del estudiante autenticado
@@ -583,8 +571,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
-
-
 
 
 
@@ -892,7 +878,7 @@ components:
         email: { type: string }
         password: { type: string }
         confirm_password: { type: string }
-      required: [first_name, last_name, middle_name, document_number, email, password, confirm_password]
+      required: [first_name, last_name, middle_name, document_number, email, password]
       example:
         first_name: Luis
         last_name: Ramos
@@ -900,7 +886,6 @@ components:
         document_number: "12345678"
         email: luis@example.com
         password: clave123
-        confirm_password: clave123
 
     LoginRequest:
       type: object

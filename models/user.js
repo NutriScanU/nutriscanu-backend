@@ -32,8 +32,8 @@ const User = sequelize.define(
       allowNull: false,
     },
     role: {
-      type: DataTypes.ENUM('estudiante', 'admin'),
-      defaultValue: 'estudiante',
+      type: DataTypes.ENUM('student', 'admin'),
+      defaultValue: 'student',
     },
     mustChangePassword: {
       type: DataTypes.BOOLEAN,
@@ -70,6 +70,19 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true
     },
+    
+    profile_image: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    about_me: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    social_links: {
+      type: DataTypes.JSON,
+      allowNull: true
+    }
     
     
   },

@@ -4,7 +4,8 @@ import bcrypt from 'bcryptjs';
 import capitalize from '../utils/capitalize.js';
 import AuditLog from '../models/AuditLog.js';
 import crypto from 'crypto'; 
-import { sendWelcomeEmail } from '../utils/emailSender.js';
+import { sendWelcomeEmail } from '../services/emailService.js';
+
 
 // 📄 Listar usuarios con paginación
 export const getAllUsers = async (req, res) => {
@@ -93,13 +94,13 @@ export const updateUser = async (req, res) => {
       return res.status(400).json({ error: 'Apellido materno inválido.' });
     }
 
-    if (user.role === 'admin' && role === 'estudiante') {
+    if (user.role === 'admin' && role === 'student') {
       return res.status(403).json({
-        error: 'No puedes cambiar el rol de un administrador a estudiante'
+        error: 'No puedes cambiar el rol de un administrador a student'
       });
     }
 
-    const rolesValidos = ['estudiante', 'admin'];
+    const rolesValidos = ['student', 'admin'];
     if (role && !rolesValidos.includes(role)) {
       return res.status(400).json({
         error: 'No existe el rol. Comuníquese con el administrador.'
@@ -250,7 +251,7 @@ export const changeUserRole = async (req, res) => {
   try {
     const targetUserId = req.params.id;
     const { role } = req.body;
-    const validRoles = ['estudiante', 'admin'];
+    const validRoles = ['student', 'admin'];
 
     if (!validRoles.includes(role)) {
       return res.status(400).json({ error: 'Rol no permitido' });
@@ -277,7 +278,7 @@ export const changeUserRole = async (req, res) => {
     }
 
     // 🛡️ Evitar degradar a otro admin
-    if (user.role === 'admin' && role === 'estudiante') {
+    if (user.role === 'admin' && role === 'student') {
       return res.status(403).json({
         error: 'No puedes degradar a un administrador existente'
       });
@@ -313,7 +314,7 @@ export const changeUserRole = async (req, res) => {
   }
 };
 
-// ➕ Crear estudiante con contraseña generada automáticamente
+// ➕ Crear student con contraseña generada automáticamente
 export const createStudent = async (req, res) => {
   try {
     const {
@@ -348,7 +349,7 @@ export const createStudent = async (req, res) => {
     const tempPassword = crypto.randomBytes(6).toString('hex'); // ejemplo: "a1b2c3d4e5f6"
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-    // Crear estudiante
+    // Crear student
     const student = await User.create({
       first_name: capitalize(first_name),
       last_name: capitalize(last_name),
@@ -356,7 +357,7 @@ export const createStudent = async (req, res) => {
       document_number,
       email,
       password: hashedPassword,
-      role: 'estudiante',
+      role: 'student',
       mustChangePassword: true
     });
 
@@ -369,7 +370,7 @@ export const createStudent = async (req, res) => {
 
     // ✅ Respuesta al frontend
     res.status(201).json({
-      message: 'Estudiante registrado correctamente.',
+      message: 'student registrado correctamente.',
       temporalPassword: tempPassword,
       user: {
         id: student.id,
@@ -379,7 +380,7 @@ export const createStudent = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error al crear estudiante:', error);
-    res.status(500).json({ error: 'Error interno al crear estudiante.' });
+    console.error('❌ Error al crear student:', error);
+    res.status(500).json({ error: 'Error interno al crear student.' });
   }
 };

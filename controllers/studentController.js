@@ -69,7 +69,7 @@ const registerClinic = async (req, res) => {
 };
 
 /* ────────────────────────────────────────────────
- 📚 OBTENER HISTORIAL DE ANÁLISIS DEL ESTUDIANTE
+ 📚 OBTENER HISTORIAL DE ANÁLISIS DEL STUDENT
 ──────────────────────────────────────────────── */
 const getAnalysisHistory = async (req, res) => {
   try {
@@ -283,30 +283,105 @@ const getUserProfile = async (req, res) => {
 /* ────────────────────────────────────────────────
  ✏️ ACTUALIZAR PERFIL DEL USUARIO AUTENTICADO
 ──────────────────────────────────────────────── */
-const updateUserProfile = async (req, res) => {
+const updateUserName = async (req, res) => {
+  const { first_name, middle_name, last_name } = req.body;
   const userId = req.user.userId;
-  const { first_name, last_name, middle_name, email } = req.body;
+
+  if (!first_name || !middle_name || !last_name) {
+    return res.status(400).json({ error: 'Todos los campos de nombre son requeridos.' });
+  }
 
   try {
     const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado.' });
-    }
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
 
-    // Validar si el nuevo correo ya está en uso por otro usuario
-    if (email && email !== user.email) {
-      const existingEmail = await User.findOne({ where: { email } });
-      if (existingEmail && existingEmail.id !== user.id) {
-        return res.status(400).json({ error: 'El correo ya está registrado por otro usuario.' });
-      }
-    }
-
-    await user.update({ first_name, last_name, middle_name, email });
-    return res.status(200).json({ message: 'Perfil actualizado correctamente.', user });
-
+    await user.update({ first_name, middle_name, last_name });
+    return res.status(200).json({ message: 'Nombre actualizado correctamente.', user });
   } catch (error) {
-    console.error('❌ Error al actualizar perfil:', error.message);
-    return res.status(500).json({ error: 'Error al actualizar el perfil del usuario.' });
+    console.error('❌ Error al actualizar nombre:', error.message);
+    return res.status(500).json({ error: 'Error interno al actualizar nombre.' });
+  }
+};
+
+
+const updateUserEmail = async (req, res) => {
+  const { email } = req.body;
+  const userId = req.user.userId;
+
+  if (!email) return res.status(400).json({ error: 'El correo es requerido.' });
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+    const exists = await User.findOne({ where: { email } });
+    if (exists && exists.id !== user.id) {
+      return res.status(400).json({ error: 'El correo ya está en uso.' });
+    }
+
+    await user.update({ email });
+    return res.status(200).json({ message: 'Correo actualizado correctamente.', email });
+  } catch (error) {
+    console.error('❌ Error al actualizar correo:', error.message);
+    return res.status(500).json({ error: 'Error interno al actualizar correo.' });
+  }
+};
+
+const updateProfileImage = async (req, res) => {
+  const { profile_image } = req.body;
+  const userId = req.user.userId;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+    await user.update({ profile_image });
+    return res.status(200).json({ message: 'Foto de perfil actualizada.', profile_image });
+  } catch (error) {
+    console.error('❌ Error al actualizar foto de perfil:', error.message);
+    return res.status(500).json({ error: 'Error interno al actualizar imagen.' });
+  }
+};
+
+
+const updateAboutMe = async (req, res) => {
+  const { about_me } = req.body;
+  const userId = req.user.userId;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+    await user.update({ about_me });
+    return res.status(200).json({ message: 'Sección "Sobre mí" actualizada.', about_me });
+  } catch (error) {
+    console.error('❌ Error al actualizar "Sobre mí":', error.message);
+    return res.status(500).json({ error: 'Error interno al actualizar descripción.' });
+  }
+};
+
+const updateSocialLinks = async (req, res) => {
+  const { facebook, instagram, twitter, linkedin } = req.body;
+  const userId = req.user.userId;
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+    const currentLinks = user.social_links || {};
+    const updatedLinks = {
+      ...currentLinks,
+      ...(facebook && { facebook }),
+      ...(instagram && { instagram }),
+      ...(twitter && { twitter }),
+      ...(linkedin && { linkedin })
+    };
+
+    await user.update({ social_links: updatedLinks });
+    return res.status(200).json({ message: 'Redes sociales actualizadas.', social_links: updatedLinks });
+  } catch (error) {
+    console.error('❌ Error al actualizar redes sociales:', error.message);
+    return res.status(500).json({ error: 'Error interno al actualizar redes.' });
   }
 };
 
@@ -322,6 +397,11 @@ export {
   deleteAnalysisById,
   getLatestRecommendation,
   getUserProfile,
-  updateUserProfile
+  updateUserName,
+  updateUserEmail,
+  updateProfileImage,
+  updateAboutMe,
+  updateSocialLinks
+  
 };
 

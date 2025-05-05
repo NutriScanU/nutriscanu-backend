@@ -4,9 +4,9 @@ import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import User from '../models/user.js';
 import capitalize from '../utils/capitalize.js';
-import { sendResetPasswordCodeEmail } from '../utils/emailSender.js'; 
 import { v4 as uuidv4 } from 'uuid';
 import { sendResetPasswordEmail } from '../services/emailService.js';
+import { sendLoginCodeEmail } from '../services/emailService.js';
 
 
 
@@ -20,12 +20,11 @@ export const register = async (req, res) => {
       document_number,
       email,
       password,
-      confirm_password,
       role
     } = req.body;
 
     // 🧪 Validar campos obligatorios
-    if (!first_name || !last_name || !middle_name || !email || !password || !confirm_password || !document_number) {
+    if (!first_name || !last_name || !middle_name || !email || !password || !document_number) {
       return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
     }
 
@@ -61,12 +60,12 @@ export const register = async (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
     }
-    if (password !== confirm_password) {
-      return res.status(400).json({ error: 'Las contraseñas no coinciden.' });
-    }
+    // if (password !== confirm_password) {
+    //   return res.status(400).json({ error: 'Las contraseñas no coinciden.' });
+    // }
 
     // 🧩 Validar rol (si se envía)
-    const rolesValidos = ['estudiante', 'admin'];
+    const rolesValidos = ['student', 'admin'];
     if (role && !rolesValidos.includes(role)) {
       return res.status(400).json({ error: 'Rol inválido. Comuníquese con el administrador.' });
     }
@@ -100,7 +99,7 @@ export const register = async (req, res) => {
       document_number,
       email,
       password: hashedPassword,
-      role: role || 'estudiante'
+      role: role || 'student'
     });
 
     return res.status(201).json({ message: 'Usuario registrado correctamente.' });
@@ -452,3 +451,148 @@ export const checkEmailExists = async (req, res) => {
     return res.status(500).json({ message: "Error del servidor" });
   }
 };
+
+
+
+// 📌 Solicitar código de acceso temporal
+export const sendLoginCode = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) return res.status(400).json({ error: 'Correo es obligatorio' });
+
+  try {
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(200).json({ message: 'Si el correo está registrado, recibirás un código.' });
+    }
+
+    // 🔢 Generar código único y fecha de expiración
+    const code = Math.floor(10000 + Math.random() * 90000).toString(); // 5 dígitos
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
+
+    user.reset_code = code;
+    user.reset_code_expires = expiresAt;
+    await user.save();
+
+    // 📩 Enviar correo
+    const fullName = `${user.first_name} ${user.middle_name || ''} ${user.last_name}`;
+    await sendLoginCodeEmail(user.email, fullName.trim(), code);
+
+    res.status(200).json({ message: 'Código enviado al correo' });
+  } catch (error) {
+    console.error('❌ Error al enviar código de inicio:', error);
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+// 📌 Login con código de acceso temporal
+export const loginWithCode = async (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    return res.status(400).json({ error: 'Correo y código son obligatorios' });
+  }
+
+  try {
+    const user = await User.findOne({ where: { email } });
+
+    if (
+      !user ||
+      !user.reset_code ||
+      user.reset_code !== code ||
+      Date.now() > new Date(user.reset_code_expires)
+    ) {
+      return res.status(400).json({ error: 'Código inválido o expirado' });
+    }
+
+    // ✅ Código válido, limpiar y generar token
+    user.reset_code = null;
+    user.reset_code_expires = null;
+    await user.save();
+
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.status(200).json({ token });
+
+  } catch (error) {
+    console.error('❌ Error en loginWithCode:', error);
+    res.status(500).json({ error: 'Error interno al iniciar sesión' });
+  }
+};
+
+
+export const requestLoginCode = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) return res.status(400).json({ message: 'El correo es obligatorio' });
+
+  try {
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      // Para evitar revelar si el email existe
+      return res.status(200).json({ message: 'Si el correo está registrado, recibirás un código temporal.' });
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString(); // código de 6 dígitos
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
+
+    user.reset_code = code;
+    user.reset_code_expires = expires;
+    await user.save();
+
+    const fullName = `${user.first_name} ${user.middle_name} ${user.last_name}`;
+    await sendLoginCodeEmail(email, code, fullName);
+
+    res.status(200).json({ message: 'Código enviado. Revisa tu correo.' });
+
+  } catch (error) {
+    console.error('❌ Error al solicitar código de login:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+
+export const verifyLoginCode = async (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code)
+    return res.status(400).json({ message: 'Correo y código son requeridos' });
+
+  try {
+    const user = await User.findOne({ where: { email } });
+
+    if (
+      !user ||
+      !user.reset_code ||
+      String(user.reset_code) !== String(code) ||
+      new Date() > new Date(user.reset_code_expires)
+    ) {
+      return res.status(400).json({ message: 'Código inválido o expirado' });
+    }
+
+    // ✅ El código es válido: genera token
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // 🔄 Limpiar el código usado
+    user.reset_code = null;
+    user.reset_code_expires = null;
+    await user.save();
+
+    return res.status(200).json({ token });
+
+  } catch (error) {
+    console.error('❌ Error al verificar código de login:', error);
+    return res.status(500).json({ message: 'Error interno al verificar código' });
+  }
+};
+
