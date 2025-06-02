@@ -318,7 +318,55 @@ paths:
           $ref: '#/components/responses/ServerError'
 
 
-
+  /api/auth/check-email:
+    get:
+      summary: Verificar si un correo ya está registrado
+      tags: [auth]
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema:
+            type: string
+            format: email
+          description: Correo electrónico a verificar
+      responses:
+        '200':
+          description: El correo está registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: El correo ya está registrado ✅
+        '404':
+          description: El correo no está registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: El correo no está registrado ❌
+        '400':
+          description: Falta el parámetro `email`
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Email es requerido
 
   /api/students/register-clinic:
     post:

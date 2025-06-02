@@ -41,6 +41,7 @@ router.post('/login-with-code', loginWithCode);
 
 
 
-router.post('/check-email', checkEmailExists);
+router.get('/check-email', checkEmailExists);
+router.post('/check-email', checkEmailExists); // ✅ Agrega esta línea
 
 export default router;

@@ -7,7 +7,7 @@ import capitalize from '../utils/capitalize.js';
 import { v4 as uuidv4 } from 'uuid';
 import { sendResetPasswordEmail } from '../services/emailService.js';
 import { sendLoginCodeEmail } from '../services/emailService.js';
-
+import { findUserByEmail } from '../services/userService.js';
 
 
 // 📌 Registro de usuario
@@ -286,7 +286,7 @@ export const forgotPassword = async (req, res) => {
     const obfuscated = "*****" + visible + "@" + partes[1];
 
     res.status(200).json({
-      message: "Correo enviado con enlace de recuperación",
+      // message: "Correo enviado con enlace de recuperación",
       obfuscatedEmail: obfuscated
     });
 
@@ -437,20 +437,25 @@ export const debugGetResetCode = async (req, res) => {
 
 
 export const checkEmailExists = async (req, res) => {
-  const { email } = req.body;
+  const { email } = req.body; // CAMBIO: de req.query a req.body
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email es requerido' });
+  }
 
   try {
     const user = await User.findOne({ where: { email } });
+
     if (user) {
-      return res.status(200).json({ exists: true });
+      return res.status(200).json({ exists: true, message: 'El correo ya está registrado ✅' });
     } else {
-      return res.status(200).json({ exists: false });  // ✅ CORREGIDO
+      return res.status(404).json({ exists: false, message: 'El correo no está registrado ❌' });
     }
   } catch (error) {
-    console.error("Error al verificar el correo:", error);
-    return res.status(500).json({ message: "Error del servidor" });
+    return res.status(500).json({ error: 'Error del servidor al verificar el email' });
   }
 };
+
 
 
 

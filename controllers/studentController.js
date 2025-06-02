@@ -42,7 +42,7 @@ const registerClinic = async (req, res) => {
       return res.status(400).json({ error: 'Historial de tabaquismo inválido' });
     }
 
-    const flaskResponse = await axios.post('http://localhost:8000/predict', {
+    const flaskResponse = await axios.post('http://localhost:8000/predict', {//CAMBIAR CUANDO SE DESPLIEGUE
       age, gender, bmi, hbA1c, blood_glucose_level,
       hemoglobin, insulin, triglycerides,
       hematocrit, red_blood_cells, smoking_history
@@ -108,7 +108,7 @@ const analyzeRecommendation = async (req, res) => {
     const respuestas = Object.values(habits);
     const payload = [condition, ...respuestas];
 
-    const flaskResponse = await axios.post('http://localhost:8000/recommend', {
+    const flaskResponse = await axios.post('http://localhost:8000/recommend', {//CAMBIAR CUANDO SE DESPLIEGUE
       input: payload
     });
 
