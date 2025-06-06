@@ -2,6 +2,7 @@ import express from 'express';
 import authMiddleware from '../middleware/authMiddleware.js';
 import isStudent from '../middleware/isStudent.js';
 
+
 import {
   registerClinic,
   getAnalysisHistory,
@@ -16,7 +17,9 @@ import {
   updateUserEmail,
   updateProfileImage,
   updateAboutMe,
-  updateSocialLinks
+  updateSocialLinks,
+  getStudentProfile,
+  confirmEmailChange
 } from '../controllers/studentController.js';
 
 const router = express.Router();
@@ -31,6 +34,7 @@ router.get('/recommendations', authMiddleware, isStudent, getLatestRecommendatio
 // 🩺 Perfil clínico
 router.post('/register-clinic', authMiddleware, isStudent, registerClinic);
 router.get('/clinic-profile', authMiddleware, isStudent, getClinicProfile);
+router.get('/profile', authMiddleware, isStudent, getStudentProfile);
 router.put('/clinic-profile', authMiddleware, isStudent, updateClinicProfile);
 router.delete('/clinic-profile', authMiddleware, isStudent, deleteClinicProfile);
 
@@ -40,5 +44,11 @@ router.put('/update-email', authMiddleware, isStudent, updateUserEmail);
 router.put('/update-photo', authMiddleware, isStudent, updateProfileImage);
 router.put('/update-about', authMiddleware, isStudent, updateAboutMe);
 router.put('/update-socials', authMiddleware, isStudent, updateSocialLinks);
+
+
+
+
+router.get('/confirm-email-change', confirmEmailChange);
+
 
 export default router;

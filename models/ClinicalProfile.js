@@ -26,7 +26,11 @@ const ClinicalProfile = sequelize.define('ClinicalProfile', {
   condition: {
     type: DataTypes.STRING,
     allowNull: false // 🔥 IMPORTANTE para que no falle el AnalysisLog
-  }
+  },
+  probabilidades: {
+    type: DataTypes.JSONB,
+    allowNull: true
+  } 
 });
 
 User.hasOne(ClinicalProfile, { foreignKey: 'userId' });

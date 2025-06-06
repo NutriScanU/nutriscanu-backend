@@ -61,7 +61,7 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true
     },
-    
+
     reset_token: {
       type: DataTypes.STRING,
       allowNull: true
@@ -70,7 +70,7 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true
     },
-    
+
     profile_image: {
       type: DataTypes.STRING,
       allowNull: true
@@ -82,13 +82,33 @@ const User = sequelize.define(
     social_links: {
       type: DataTypes.JSON,
       allowNull: true
+    },
+    
+
+    new_email: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    email_verification_token: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    email_verification_expires: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+
+
+    token_version: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
     }
-    
-    
+
+
   },
   {
     timestamps: true,
-    paranoid: true, 
+    paranoid: true,
     deletedAt: 'deletedAt',
   }
 );

@@ -130,7 +130,7 @@ export const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { userId: user.id, role: user.role, token_version: user.token_version },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
@@ -517,7 +517,7 @@ export const loginWithCode = async (req, res) => {
     await user.save();
 
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { userId: user.id, role: user.role, token_version: user.token_version },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
@@ -583,7 +583,7 @@ export const verifyLoginCode = async (req, res) => {
 
     // ✅ El código es válido: genera token
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { userId: user.id, role: user.role, token_version: user.token_version },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
@@ -600,4 +600,6 @@ export const verifyLoginCode = async (req, res) => {
     return res.status(500).json({ message: 'Error interno al verificar código' });
   }
 };
+
+
 

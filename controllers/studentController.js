@@ -1,6 +1,10 @@
 import axios from 'axios';
 import ClinicalProfile from '../models/ClinicalProfile.js';
 import AnalysisLog from '../models/AnalysisLog.js';
+import { sendEmailChangeVerification } from '../services/emailService.js';
+console.log('🔍 Verificando función sendEmailChangeVerification:', sendEmailChangeVerification);
+
+import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
 
 /* ────────────────────────────────────────────────
@@ -42,18 +46,20 @@ const registerClinic = async (req, res) => {
       return res.status(400).json({ error: 'Historial de tabaquismo inválido' });
     }
 
-    const flaskResponse = await axios.post('http://localhost:8000/predict', {//CAMBIAR CUANDO SE DESPLIEGUE
+    const flaskResponse = await axios.post(`${process.env.FLASK_URL}/predict`, {//CAMBIAR CUANDO SE DESPLIEGUE
       age, gender, bmi, hbA1c, blood_glucose_level,
       hemoglobin, insulin, triglycerides,
       hematocrit, red_blood_cells, smoking_history
     });
 
-    const condition = flaskResponse.data.condition;
+    const { condition, probabilities } = flaskResponse.data;
+
 
     const profile = await ClinicalProfile.create({
       userId, age, gender, bmi, hbA1c, blood_glucose_level,
       hemoglobin, insulin, triglycerides,
-      hematocrit, red_blood_cells, smoking_history, condition
+      hematocrit, red_blood_cells, smoking_history, condition,
+      probabilidades: probabilities
     });
 
     return res.status(201).json({
@@ -108,7 +114,7 @@ const analyzeRecommendation = async (req, res) => {
     const respuestas = Object.values(habits);
     const payload = [condition, ...respuestas];
 
-    const flaskResponse = await axios.post('http://localhost:8000/recommend', {//CAMBIAR CUANDO SE DESPLIEGUE
+    const flaskResponse = await axios.post(`${process.env.FLASK_URL}/recommend`, {//CAMBIAR CUANDO SE DESPLIEGUE
       input: payload
     });
 
@@ -305,25 +311,35 @@ const updateUserName = async (req, res) => {
 
 
 const updateUserEmail = async (req, res) => {
-  const { email } = req.body;
+  const { new_email } = req.body;
   const userId = req.user.userId;
 
-  if (!email) return res.status(400).json({ error: 'El correo es requerido.' });
+  if (!new_email) return res.status(400).json({ error: 'El nuevo correo es requerido.' });
 
   try {
     const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
 
-    const exists = await User.findOne({ where: { email } });
-    if (exists && exists.id !== user.id) {
-      return res.status(400).json({ error: 'El correo ya está en uso.' });
-    }
+    const exists = await User.findOne({ where: { email: new_email } });
+    if (exists) return res.status(400).json({ error: 'El nuevo correo ya está en uso.' });
 
-    await user.update({ email });
-    return res.status(200).json({ message: 'Correo actualizado correctamente.', email });
+    // 🔐 Generar token temporal
+    const token = jwt.sign(
+      { userId, new_email },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    // 📩 Enviar correo con enlace de verificación
+    await sendEmailChangeVerification(new_email, `${user.first_name} ${user.last_name}`, token);
+
+    return res.status(200).json({
+      message: 'Revisa tu nuevo correo para confirmar el cambio.'
+    });
+
   } catch (error) {
-    console.error('❌ Error al actualizar correo:', error.message);
-    return res.status(500).json({ error: 'Error interno al actualizar correo.' });
+    console.error('❌ Error al solicitar cambio de correo:', error.message);
+    return res.status(500).json({ error: 'Error interno al solicitar cambio de correo.' });
   }
 };
 
@@ -385,6 +401,96 @@ const updateSocialLinks = async (req, res) => {
   }
 };
 
+const getStudentProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId; // Asegúrate de que la autenticación esté establecida
+
+    // Obteniendo los datos del perfil del usuario desde la base de datos
+    const user = await User.findByPk(userId, {
+      attributes: ['first_name', 'last_name', 'middle_name', 'email', 'document_number', 'profile_image', 'about_me', 'social_links']
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Obtén el análisis clínico más reciente del estudiante (si es necesario)
+    const latestAnalysis = await AnalysisLog.findOne({
+      where: { userId },
+      order: [['createdAt', 'DESC']]
+    });
+
+    const condition = latestAnalysis ? latestAnalysis.condition : null;
+    const hasRecommendation = latestAnalysis && latestAnalysis.recommendations?.length > 0;
+
+    // Devolver los datos del perfil junto con la condición de salud y recomendaciones
+    return res.status(200).json({
+      profile: user,
+      health_condition: condition,
+      has_recommendation: hasRecommendation
+    });
+
+  } catch (error) {
+    console.error('❌ Error al obtener perfil:', error.message);
+    return res.status(500).json({ error: 'Error al obtener perfil del estudiante' });
+  }
+};
+
+const requestEmailChange = async (req, res) => {
+  const userId = req.user.userId;
+  const { new_email } = req.body;
+
+  if (!new_email) {
+    return res.status(400).json({ error: 'El nuevo correo es requerido.' });
+  }
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+    const token = jwt.sign(
+      { userId, new_email },
+      process.env.JWT_SECRET,
+      { expiresIn: '10m' }
+    );
+
+    await sendEmailChangeVerification(new_email, `${user.first_name} ${user.last_name}`, token);
+
+    return res.status(200).json({ message: 'Revisa tu nuevo correo para confirmar el cambio.' });
+  } catch (error) {
+    console.error('❌ Error solicitando cambio de correo:', error.message);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+const confirmEmailChange = async (req, res) => {
+  const { token } = req.query;
+
+  if (!token) {
+    return res.redirect('https://nutriscanu.com/confirmacion-error?reason=missing_token');
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const { userId, new_email } = decoded;
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.redirect('https://nutriscanu.com/confirmacion-error?reason=user_not_found');
+    }
+
+    user.email = new_email;
+    await user.save();
+
+    return res.redirect('https://nutriscanu.com/confirmacion-exitosa');
+  } catch (error) {
+    console.error('❌ Error al confirmar correo:', error.message);
+    return res.redirect('https://nutriscanu.com/confirmacion-error?reason=invalid_token');
+  }
+};
+
+
+
 
 export {
   registerClinic,
@@ -401,7 +507,11 @@ export {
   updateUserEmail,
   updateProfileImage,
   updateAboutMe,
-  updateSocialLinks
-  
+  updateSocialLinks,
+  getStudentProfile,
+  requestEmailChange,
+  confirmEmailChange,
+  sendEmailChangeVerification
+
 };
 
