@@ -1,6 +1,8 @@
 // server.js
 import dotenv from 'dotenv';
 import open from 'open';
+import fs from 'fs';
+import path from 'path';
 import sequelize from './config/db.js';
 import app from './app.js';
 import User from './models/user.js';
@@ -9,6 +11,13 @@ import './models/AuditLog.js';
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
+
+// ✅ Crear carpeta de uploads si no existe
+const uploadDir = path.join(process.cwd(), 'uploads/profile-images');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  console.log(`📁 Carpeta creada: ${uploadDir}`);
+}
 
 async function crearAdminInicial() {
   const adminEmail = 'alexjosu21@gmail.com';

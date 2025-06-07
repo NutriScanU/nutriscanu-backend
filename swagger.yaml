@@ -586,7 +586,61 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-
+  /api/students/health-status:
+    get:
+      summary: Obtener estado de salud del usuario
+      description: Retorna la condición de salud y la probabilidad asociada.
+      tags: [student]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Estado de salud y probabilidad obtenidos con éxito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  health_condition:
+                    type: string
+                    example: "Diabetes"
+                  probability:
+                    type: number
+                    example: 90.17
+        '401':
+          description: Token no proporcionado o inválido
+        '500':
+          description: Error interno del servidor
+        '401':
+          description: No se proporcionó un token válido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Token no proporcionado"
+        '404':
+          description: No se han encontrado datos clínicos para el usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No se ha registrado análisis clínico para este usuario"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error inesperado"
 
   /api/students/profile:
     get:
@@ -610,18 +664,18 @@ paths:
                       middle_name: { type: string }
                       email: { type: string }
                       document_number: { type: string }
-                      profile_image: { type: string, nullable: true }
-                      about_me: { type: string, nullable: true }
+                      profile_image: { type: string }
+                      about_me: { type: string }
                       social_links:
                         type: object
                         additionalProperties:
                           type: string
-                        example:
-                          instagram: "https://instagram.com/usuario"
-                          facebook: "https://facebook.com/usuario"
                   health_condition:
                     type: string
-                    example: Anemia
+                    example: "Anemia"
+                  probability:
+                    type: number
+                    example: 90.17
                   has_recommendation:
                     type: boolean
                     example: true
@@ -629,7 +683,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
-
   /api/students/update-name:
     put:
       summary: Actualizar nombres del usuario autenticado
@@ -723,8 +776,8 @@ paths:
           description: Token inválido o expirado
         '404':
           description: Usuario no encontrado
-
-
+  
+  
   /api/students/update-photo:
     put:
       summary: Actualizar la foto de perfil del estudiante
@@ -734,13 +787,14 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               properties:
-                profile_image:
+                image:
                   type: string
-                  example: "https://mi-cdn.com/foto.jpg"
+                  format: binary
+                  description: Imagen del perfil (JPG, PNG)
       responses:
         '200':
           description: Foto actualizada correctamente
@@ -751,8 +805,10 @@ paths:
                 properties:
                   message:
                     type: string
+                    example: Foto de perfil actualizada.
                   profile_image:
                     type: string
+                    example: https://nutriscanu.com/uploads/profile-images/mi-foto.jpg
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/ServerError' }

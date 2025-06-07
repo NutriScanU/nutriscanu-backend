@@ -6,6 +6,7 @@ console.log('🔍 Verificando función sendEmailChangeVerification:', sendEmailC
 
 import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
+import path from 'path';
 
 /* ────────────────────────────────────────────────
  📥 REGISTRO DE DATOS CLÍNICOS (con predicción Flask)
@@ -344,20 +345,27 @@ const updateUserEmail = async (req, res) => {
 };
 
 const updateProfileImage = async (req, res) => {
-  const { profile_image } = req.body;
   const userId = req.user.userId;
+
+  if (!req.file) return res.status(400).json({ error: 'No se recibió ninguna imagen.' });
+
+  const filePath = `/uploads/profile-images/${req.file.filename}`;
 
   try {
     const user = await User.findByPk(userId);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
 
-    await user.update({ profile_image });
-    return res.status(200).json({ message: 'Foto de perfil actualizada.', profile_image });
+    user.profile_image = filePath;
+    await user.save();
+
+    return res.status(200).json({ message: 'Foto actualizada correctamente.', profile_image: filePath });
   } catch (error) {
-    console.error('❌ Error al actualizar foto de perfil:', error.message);
-    return res.status(500).json({ error: 'Error interno al actualizar imagen.' });
+    console.error('❌ Error al guardar la imagen:', error.message);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
   }
 };
+
+
 
 
 const updateAboutMe = async (req, res) => {
@@ -403,30 +411,62 @@ const updateSocialLinks = async (req, res) => {
 
 const getStudentProfile = async (req, res) => {
   try {
-    const userId = req.user.userId; // Asegúrate de que la autenticación esté establecida
+    const userId = req.user.userId;
 
-    // Obteniendo los datos del perfil del usuario desde la base de datos
+    // Obtener datos del usuario
     const user = await User.findByPk(userId, {
-      attributes: ['first_name', 'last_name', 'middle_name', 'email', 'document_number', 'profile_image', 'about_me', 'social_links']
+      attributes: [
+        'first_name',
+        'last_name',
+        'middle_name',
+        'email',
+        'document_number',
+        'profile_image',
+        'about_me',
+        'social_links'
+      ]
     });
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    // Obtén el análisis clínico más reciente del estudiante (si es necesario)
-    const latestAnalysis = await AnalysisLog.findOne({
+    // Obtener el análisis clínico más reciente
+    const latestAnalysis = await ClinicalProfile.findOne({
       where: { userId },
       order: [['createdAt', 'DESC']]
     });
 
-    const condition = latestAnalysis ? latestAnalysis.condition : null;
-    const hasRecommendation = latestAnalysis && latestAnalysis.recommendations?.length > 0;
+    let condition = 'No disponible';
+    let probability = 0;
+    let hasRecommendation = false;
 
-    // Devolver los datos del perfil junto con la condición de salud y recomendaciones
+    if (latestAnalysis) {
+      condition = latestAnalysis.condition || 'No disponible';
+
+      if (
+        latestAnalysis.probabilidades &&
+        typeof latestAnalysis.probabilidades === 'object' &&
+        latestAnalysis.probabilidades[condition] !== undefined
+      ) {
+        probability = latestAnalysis.probabilidades[condition];
+      }
+
+      // Si tienes recomendaciones, lo validas desde AnalysisLog (no desde ClinicalProfile)
+      const recommendationRecord = await AnalysisLog.findOne({
+        where: { userId },
+        order: [['createdAt', 'DESC']]
+      });
+
+      if (recommendationRecord && recommendationRecord.recommendations?.length > 0) {
+        hasRecommendation = true;
+      }
+    }
+
     return res.status(200).json({
       profile: user,
       health_condition: condition,
+      probability,
       has_recommendation: hasRecommendation
     });
 
@@ -489,8 +529,55 @@ const confirmEmailChange = async (req, res) => {
   }
 };
 
+const getHealthStatus = async (req, res) => {
+  try {
+    const userId = req.user.userId;
 
+    // Buscar el análisis clínico más reciente para el usuario
+    const analysis = await ClinicalProfile.findOne({
+      where: { userId },
+      order: [['createdAt', 'DESC']] // Obtiene el más reciente
+    });
 
+    if (!analysis) {
+      return res.status(404).json({ error: 'No se ha registrado análisis clínico para este usuario' });
+    }
+
+    const { condition, probabilidades } = analysis; // Condición de salud y probabilidades
+
+    // Verificamos la probabilidad de la condición
+    const probability = probabilidades && probabilidades[condition] !== undefined ? probabilidades[condition] : 0;
+
+    return res.status(200).json({
+      health_condition: condition,
+      probability: probability // Devolvemos también la probabilidad
+    });
+  } catch (error) {
+    console.error('Error al obtener el estado de salud:', error.message);
+    return res.status(500).json({ error: 'Error inesperado' });
+  }
+};
+
+const updateProfilePhoto = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se subió ninguna imagen.' });
+    }
+
+    const userId = req.user.userId;
+    const imageUrl = `/uploads/profile_images/${req.file.filename}`;
+
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    await user.update({ profile_image: imageUrl });
+
+    return res.status(200).json({ message: 'Imagen actualizada correctamente', profile_image: imageUrl });
+  } catch (err) {
+    console.error('❌ Error al actualizar imagen:', err.message);
+    return res.status(500).json({ error: 'Error interno al actualizar imagen' });
+  }
+};
 
 export {
   registerClinic,
@@ -511,7 +598,9 @@ export {
   getStudentProfile,
   requestEmailChange,
   confirmEmailChange,
-  sendEmailChangeVerification
+  sendEmailChangeVerification,
+  getHealthStatus,
+  updateProfilePhoto
 
 };
 
