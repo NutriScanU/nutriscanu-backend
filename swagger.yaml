@@ -888,6 +888,63 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/ServerError' }
 
+  /api/auth/check-dni:
+    post:
+      summary: Verifica si un DNI ya está registrado
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                document_number:
+                  type: string
+                  example: "12345678"
+                  description: Número de DNI a verificar (8 dígitos)
+      responses:
+        '200':
+          description: El DNI ya está registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                  message:
+                    type: string
+        '404':
+          description: El DNI no está registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: Error por falta de DNI
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
 
 
   /api/admin/users:

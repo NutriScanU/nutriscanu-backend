@@ -10,7 +10,9 @@ import {   register,
     resetPasswordWithToken,
     checkEmailExists,
     sendLoginCode,
-    loginWithCode 
+    loginWithCode,
+    checkDniExists
+
 } from '../controllers/authController.js';
 
 import authMiddleware from '../middleware/authMiddleware.js';
@@ -43,5 +45,8 @@ router.post('/login-with-code', loginWithCode);
 
 router.get('/check-email', checkEmailExists);
 router.post('/check-email', checkEmailExists); // ✅ Agrega esta línea
+
+router.post('/check-dni', checkDniExists);
+
 
 export default router;

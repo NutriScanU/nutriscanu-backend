@@ -601,5 +601,24 @@ export const verifyLoginCode = async (req, res) => {
   }
 };
 
+export const checkDniExists = async (req, res) => {
+  const { document_number } = req.body;
+
+  if (!document_number) {
+    return res.status(400).json({ error: 'El DNI es requerido' });
+  }
+
+  try {
+    const user = await User.findOne({ where: { document_number } });
+    if (user) {
+      return res.status(200).json({ exists: true, message: 'El DNI ya está registrado ✅' });
+    } else {
+      return res.status(404).json({ exists: false, message: 'El DNI está disponible' });
+    }
+  } catch (error) {
+    console.error('Error al verificar DNI:', error);
+    return res.status(500).json({ error: 'Error del servidor al verificar el DNI' });
+  }
+};
 
 
