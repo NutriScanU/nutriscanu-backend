@@ -115,11 +115,11 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email  || !password) {
+    if (!email || !password) {
       return res.status(400).json({ error: 'Correo y contraseña son requeridos.' });
     }
 
-    const user = await User.findOne({ where: { email  } });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(400).json({ error: 'Usuario no encontrado.' });
     }
@@ -613,12 +613,13 @@ export const checkDniExists = async (req, res) => {
     if (user) {
       return res.status(200).json({ exists: true, message: 'El DNI ya está registrado ✅' });
     } else {
-      return res.status(404).json({ exists: false, message: 'El DNI está disponible' });
+      return res.status(200).json({ exists: false, message: 'El DNI está disponible' }); // Cambiado a 200 en lugar de 404
     }
   } catch (error) {
     console.error('Error al verificar DNI:', error);
     return res.status(500).json({ error: 'Error del servidor al verificar el DNI' });
   }
 };
+
 
 
