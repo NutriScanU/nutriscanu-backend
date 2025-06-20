@@ -48,9 +48,11 @@ sequelize.authenticate()
   .then(() => sequelize.sync({ alter: true }))
   .then(() => crearAdminInicial())
   .then(() => {
+    const baseURL = process.env.BASE_URL || `http://localhost:${PORT}`;  // Usar BASE_URL desde .env o localhost por defecto
+    const swaggerURL = `${baseURL}/api-docs`;
+
     app.listen(PORT, () => {
-      const swaggerURL = `http://localhost:${PORT}/api-docs`;
-      console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+      console.log(`🚀 Servidor corriendo en ${baseURL}`);
       console.log(`📚 Swagger UI → ${swaggerURL}`);
       open(swaggerURL);
     });

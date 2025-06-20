@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 // Correo para restablecer la contraseña
 export const sendResetPasswordEmail = async (toEmail, fullName, token) => {
   // URL dinámica para el restablecimiento de la contraseña
-  const resetLink = `${process.env.BASE_URL}/reset-password/${token}`;
+  const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
 
   const mailOptions = {
     from: `"NutriScanU 🔐" <${process.env.EMAIL_USER}>`,

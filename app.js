@@ -14,9 +14,13 @@ const app = express();
 
 // 🥇 1. Habilitar CORS con credenciales
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',  // Desarrollo local
+    'https://nutriscanu-frontend-h0b6gva8dccpaghx.brazilsouth-01.azurewebsites.net'  // Producción en Azure
+  ],
   credentials: true
 }));
+
 
 // 🥈 2. Parsear cookies y JSON
 app.use(cookieParser());

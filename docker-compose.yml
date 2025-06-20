@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "5000:5000"  # Expone el puerto del backend
+    env_file:
+      - .env  # Usa el archivo .env para variables de entorno
+    depends_on:
+      - db  # El backend depende de la base de datos
+    networks:
+      - nutriscan-network
+
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: nutriscan  # Nombre de la base de datos
+      POSTGRES_USER: postgres  # Usuario de PostgreSQL
+      POSTGRES_PASSWORD: postgres  # Contraseña de PostgreSQL
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - nutriscan-network  # Ambos contenedores estarán en la misma red
+
+volumes:
+  postgres_data:  # Volumen para persistencia de datos
+
+networks:
+  nutriscan-network:
+    driver: bridge  # Usamos la red puente para la comunicación entre contenedores
