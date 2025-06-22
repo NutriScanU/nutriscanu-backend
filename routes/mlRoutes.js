@@ -6,7 +6,8 @@ const router = express.Router();
 // 🔍 Verifica si Flask está activo
 router.get('/ping', async (req, res) => {
   try {
-    const response = await axios.get('https://nutriscanu-ml-api-asc5c0hxdmfdgjac.brazilsouth-01.azurewebsites.net/ping');
+    // Utiliza la variable de entorno FLASK_URL
+    const response = await axios.get(`${process.env.FLASK_URL}/ping`);
     res.json({ flask: 'conectado', mensaje: response.data });
   } catch (error) {
     res.status(500).json({ flask: 'no conectado', error: error.message });

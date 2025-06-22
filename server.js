@@ -12,15 +12,8 @@ dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
-// ✅ Crear carpeta de uploads si no existe
-const uploadDir = path.join(process.cwd(), 'uploads/profile-images');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log(`📁 Carpeta creada: ${uploadDir}`);
-}
-
 async function crearAdminInicial() {
-  const adminEmail = 'alexjosu21@gmail.com';
+  const adminEmail = 'alexanderjosuesuclupepaucar@gmail.com';
 
   const existente = await User.findOne({ where: { email: adminEmail } });
 
@@ -32,7 +25,7 @@ async function crearAdminInicial() {
       first_name: 'Alexander Josue',
       last_name: 'Suclupe',
       middle_name: 'Paucar',
-      document_number: '72689104',
+      document_number: '00000000',
       email: adminEmail,
       password: hashedPassword,
       role: 'admin'

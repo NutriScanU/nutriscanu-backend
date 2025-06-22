@@ -15,16 +15,20 @@ const app = express();
 // 🥇 1. Habilitar CORS con credenciales
 app.use(cors({
   origin: [
-    'http://localhost:3000',  // Desarrollo local
-    'https://nutriscanu-frontend-h0b6gva8dccpaghx.brazilsouth-01.azurewebsites.net'  // Producción en Azure
+    process.env.FRONTEND_URL, // URL del frontend (ajustado para producción o desarrollo)
+    'http://localhost:3000'   // Desarrollo local (si se necesita para pruebas locales)
   ],
   credentials: true
 }));
 
-
 // 🥈 2. Parsear cookies y JSON
 app.use(cookieParser());
 app.use(express.json());
+
+// 🏥 Ruta de Health Check
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Application is healthy' });
+});
 
 // 📚 Swagger
 const swaggerDocument = YAML.load('./swagger.yaml');
