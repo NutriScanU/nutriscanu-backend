@@ -13,10 +13,10 @@ const ClinicalProfile = sequelize.define('ClinicalProfile', {
   },
   bmi: DataTypes.FLOAT,
   hbA1c: DataTypes.FLOAT,
-  blood_glucose_level: DataTypes.INTEGER,
+  blood_glucose_level: DataTypes.FLOAT,
   hemoglobin: DataTypes.FLOAT,
   insulin: DataTypes.FLOAT,
-  triglycerides: DataTypes.INTEGER,
+  triglycerides: DataTypes.FLOAT,
   hematocrit: DataTypes.FLOAT,
   red_blood_cells: DataTypes.FLOAT,
   smoking_history: {
