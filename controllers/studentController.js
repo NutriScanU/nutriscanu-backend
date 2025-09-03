@@ -2,8 +2,6 @@ import axios from 'axios';
 import ClinicalProfile from '../models/ClinicalProfile.js';
 import AnalysisLog from '../models/AnalysisLog.js';
 import { sendEmailChangeVerification } from '../services/emailService.js';
-console.log('🔍 Verificando función sendEmailChangeVerification:', sendEmailChangeVerification);
-
 import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
 import path from 'path';
@@ -263,27 +261,6 @@ const getLatestRecommendation = async (req, res) => {
   } catch (error) {
     console.error('❌ Error al obtener la última recomendación:', error.message || error);
     return res.status(500).json({ error: 'Error al obtener la última recomendación' });
-  }
-};
-/* ────────────────────────────────────────────────
- 👤 VER PERFIL DEL USUARIO AUTENTICADO
-──────────────────────────────────────────────── */
-const getUserProfile = async (req, res) => {
-  const userId = req.user.userId;
-
-  try {
-    const user = await User.findByPk(userId, {
-      attributes: ['first_name', 'last_name', 'middle_name', 'email', 'document_number', 'role']
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado.' });
-    }
-
-    return res.status(200).json(user);
-  } catch (error) {
-    console.error('❌ Error al obtener perfil:', error);
-    return res.status(500).json({ error: 'Error al obtener el perfil del usuario.' });
   }
 };
 
@@ -579,6 +556,42 @@ const updateProfilePhoto = async (req, res) => {
   }
 };
 
+const getBloodAnalysis = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    const profile = await ClinicalProfile.findOne({ where: { userId } });
+    
+    if (!profile) {
+      return res.status(404).json({ error: 'Perfil clínico no encontrado' });
+    }
+
+    // Extraer solo los datos de análisis de sangre (sin predicciones ML)
+    const bloodAnalysis = {
+      age: profile.age,
+      gender: profile.gender,
+      bmi: profile.bmi,
+      hbA1c: profile.hbA1c,
+      blood_glucose_level: profile.blood_glucose_level,
+      hemoglobin: profile.hemoglobin,
+      insulin: profile.insulin,
+      triglycerides: profile.triglycerides,
+      hematocrit: profile.hematocrit,
+      red_blood_cells: profile.red_blood_cells,
+      smoking_history: profile.smoking_history
+    };
+
+    return res.status(200).json({
+      success: true,
+      bloodAnalysis
+    });
+
+  } catch (error) {
+    console.error('❌ Error al obtener análisis de sangre:', error.message);
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
 export {
   registerClinic,
   getAnalysisHistory,
@@ -589,7 +602,6 @@ export {
   getAnalysisById,
   deleteAnalysisById,
   getLatestRecommendation,
-  getUserProfile,
   updateUserName,
   updateUserEmail,
   updateProfileImage,
@@ -598,9 +610,8 @@ export {
   getStudentProfile,
   requestEmailChange,
   confirmEmailChange,
-  sendEmailChangeVerification,
   getHealthStatus,
-  updateProfilePhoto
-
+  updateProfilePhoto,
+  getBloodAnalysis
 };
 

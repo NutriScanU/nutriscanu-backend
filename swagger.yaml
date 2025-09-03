@@ -433,6 +433,143 @@ paths:
           description: Perfil eliminado correctamente
         '404':
           description: Perfil no encontrado
+
+  /api/students/blood-analysis:
+    get:
+      summary: Obtener datos de análisis de sangre del usuario
+      description: |
+        Devuelve únicamente los valores de laboratorio clínico sin predicciones de ML.
+        
+        **Casos de uso:**
+        - Prellenar formularios de edición de perfil clínico
+        - Mostrar datos actuales sin diagnósticos
+        - Integración con sistemas externos de laboratorio
+        
+        **Nota:** Requiere que el usuario haya registrado previamente su perfil clínico.
+      tags: [student]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Datos de análisis de sangre obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                    example: true
+                  bloodAnalysis:
+                    type: object
+                    description: Objeto conteniendo todos los valores de análisis de sangre
+                    properties:
+                      age:
+                        type: integer
+                        description: Edad del paciente en años
+                        minimum: 16
+                        maximum: 35
+                        example: 25
+                      gender:
+                        type: string
+                        description: Género del paciente
+                        enum: [Male, Female]
+                        example: "Male"
+                      bmi:
+                        type: number
+                        format: float
+                        description: Índice de Masa Corporal (kg/m²)
+                        minimum: 0
+                        example: 23.5
+                      hbA1c:
+                        type: number
+                        format: float
+                        description: Hemoglobina glicosilada (%)
+                        minimum: 0
+                        example: 5.8
+                      blood_glucose_level:
+                        type: number
+                        format: float
+                        description: Nivel de glucosa en sangre (mg/dL)
+                        minimum: 0
+                        example: 95
+                      hemoglobin:
+                        type: number
+                        format: float
+                        description: Nivel de hemoglobina (g/dL)
+                        minimum: 0
+                        example: 14.2
+                      insulin:
+                        type: number
+                        format: float
+                        description: Nivel de insulina (μU/mL)
+                        minimum: 0
+                        example: 85
+                      triglycerides:
+                        type: number
+                        format: float
+                        description: Nivel de triglicéridos (mg/dL)
+                        minimum: 0
+                        example: 150
+                      hematocrit:
+                        type: number
+                        format: float
+                        description: Porcentaje de hematocrito (%)
+                        minimum: 0
+                        example: 42
+                      red_blood_cells:
+                        type: number
+                        format: float
+                        description: Conteo de glóbulos rojos (millones/μL)
+                        minimum: 0
+                        example: 4.5
+                      smoking_history:
+                        type: string
+                        description: Historial de tabaquismo del paciente
+                        enum: [Never, Former, Current, Ever, Not Current, No Info]
+                        example: "Never"
+                example:
+                  success: true
+                  bloodAnalysis:
+                    age: 25
+                    gender: "Male"
+                    bmi: 23.5
+                    hbA1c: 5.8
+                    blood_glucose_level: 95
+                    hemoglobin: 14.2
+                    insulin: 85
+                    triglycerides: 150
+                    hematocrit: 42
+                    red_blood_cells: 4.5
+                    smoking_history: "Never"
+        '404':
+          description: Perfil clínico no encontrado - El usuario no ha registrado su perfil clínico
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Perfil clínico no encontrado"
+              example:
+                error: "Perfil clínico no encontrado"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Acceso denegado - Solo estudiantes pueden acceder
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Acceso denegado. Solo estudiantes."
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/students/analyze-recommendation:
     post:
       summary: Enviar hábitos y generar recomendación personalizada

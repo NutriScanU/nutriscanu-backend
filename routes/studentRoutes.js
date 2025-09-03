@@ -20,7 +20,8 @@ import {
   updateSocialLinks,
   getStudentProfile,
   confirmEmailChange,
-  getHealthStatus
+  getHealthStatus,
+  getBloodAnalysis
 } from '../controllers/studentController.js';
 
 const router = express.Router();
@@ -37,6 +38,7 @@ router.post('/register-clinic', authMiddleware, isStudent, registerClinic);
 router.get('/clinic-profile', authMiddleware, isStudent, getClinicProfile);
 router.put('/clinic-profile', authMiddleware, isStudent, updateClinicProfile);
 router.delete('/clinic-profile', authMiddleware, isStudent, deleteClinicProfile);
+router.get('/blood-analysis', authMiddleware, isStudent, getBloodAnalysis);
 
 // 👤 Perfil de usuario
 router.get('/profile', authMiddleware, isStudent, getStudentProfile);
