@@ -238,6 +238,12 @@ export const resetPasswordWithToken = async (req, res) => {
       return res.status(400).json({ error: 'Token inválido o expirado' });
     }
 
+    // 🚨 Comparar nueva contraseña con la anterior
+    const isSame = await bcrypt.compare(new_password, user.password);
+    if (isSame) {
+      return res.status(422).json({ error: 'La nueva contraseña no puede ser igual a la anterior contraseña que se registro anteriormente.' });
+    }
+
     user.password = await bcrypt.hash(new_password, 10);
     user.reset_token = null;
     user.reset_token_expires = null;

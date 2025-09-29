@@ -448,8 +448,8 @@ const getStudentProfile = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error al obtener perfil:', error.message);
-    return res.status(500).json({ error: 'Error al obtener perfil del estudiante' });
+    
+    return res.status(500).json({ error: 'No se pudo cargar tu información en este momento. Intenta nuevamente más tarde.' });
   }
 };
 
