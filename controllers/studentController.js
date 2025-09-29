@@ -268,12 +268,34 @@ const getLatestRecommendation = async (req, res) => {
  ✏️ ACTUALIZAR PERFIL DEL USUARIO AUTENTICADO
 ──────────────────────────────────────────────── */
 const updateUserName = async (req, res) => {
-  const { first_name, middle_name, last_name } = req.body;
+  let { first_name, middle_name, last_name } = req.body;
   const userId = req.user.userId;
 
-  if (!first_name || !middle_name || !last_name) {
-    return res.status(400).json({ error: 'Todos los campos de nombre son requeridos.' });
+  const errors = [];
+
+  if (!first_name) errors.push('El nombre es requerido.');
+  else if (first_name.length < 2) errors.push('El nombre debe tener al menos 2 caracteres.');
+
+  if (!middle_name) errors.push('El apellido paterno es requerido.');
+  else if (middle_name.length < 2) errors.push('El apellido paterno debe tener al menos 2 caracteres.');
+
+  if (!last_name) errors.push('El apellido materno es requerido.');
+  else if (last_name.length < 2) errors.push('El apellido materno debe tener al menos 2 caracteres.');
+
+  if (errors.length > 0) {
+    return res.status(400).json({ errors });
   }
+
+  // Capitalizar cada palabra (para nombres/apellidos compuestos)
+  const capitalizeWords = (str) =>
+    str
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+
+  first_name = capitalizeWords(first_name);
+  middle_name = capitalizeWords(middle_name);
+  last_name = capitalizeWords(last_name);
 
   try {
     const user = await User.findByPk(userId);
