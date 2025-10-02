@@ -1,14 +1,55 @@
 openapi: 3.0.0
 info:
-  title: API Recomendación de Alimentos
+  title: NutriScan API
   version: 1.0.0
-  description: Registro, login y administración de usuarios
+  description: |
+    🧠 API para el sistema de recomendaciones nutricionales y análisis de salud
+    
+    **✨ Características principales:**
+    - 🔐 Autenticación JWT
+    - 🤖 Análisis de datos clínicos con ML
+    - 🥗 Recomendaciones nutricionales personalizadas
+    - 👤 Gestión de usuarios y perfiles
+    - 📊 Auditoría de acciones administrativas
+  contact:
+    name: 💚 NutriScan Team
+    email: support@nutriscanu.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000
+    description: 🏠 Servidor de desarrollo local
+
+tags:
+  - name: 🔐 Authentication
+    description: Operaciones de autenticación y autorización
+  - name: 👤 Profile
+    description: Operaciones sobre el perfil del usuario
+  - name: 🏥 Clinical Profile
+    description: Registro y gestión del perfil clínico del usuario
+  - name: 🩸 Blood Analysis
+    description: Consulta de resultados de análisis de sangre
+  - name: 💡 Recommendations
+    description: Generación y consulta de recomendaciones nutricionales
+  - name: 📊 Analysis History
+    description: Historial de análisis y recomendaciones
+  - name: 👨‍💼 Admin
+    description: Operaciones administrativas (solo administradores)
+  - name: 📋 Audit
+    description: Auditoría y logs del sistema
 
 paths:
+  # =============================================================================
+  # 🔐 AUTHENTICATION ENDPOINTS
+  # =============================================================================
+  
   /api/auth/register:
     post:
-      summary: Registro de usuario.
-      tags: [Auth]
+      summary: 📝 Registrar nuevo usuario
+      description: Registra un nuevo usuario estudiante en el sistema
+      tags: [🔐 Authentication]
       requestBody:
         required: true
         content:
@@ -17,16 +58,27 @@ paths:
               $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: Usuario registrado correctamente.
+          description: ✅ Usuario registrado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '409':
+          description: ⚠️ Email o DNI ya registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/ServerError'
 
   /api/auth/login:
     post:
-      summary: Iniciar sesión.
-      tags: [Auth]
+      summary: 🚪 Iniciar sesión
+      description: Autentica al usuario y retorna un token JWT
+      tags: [🔐 Authentication]
       requestBody:
         required: true
         content:
@@ -35,210 +87,145 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Login exitoso.
+          description: ✅ Login exitoso
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                    description: Token JWT de autenticación.
-                  mustChangePassword:
-                    type: boolean
-                    description: Indica si el usuario debe cambiar su contraseña.
+                $ref: '#/components/schemas/LoginResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          description: ❌ Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/auth/send-login-code:
+    post:
+      summary: 📧 Solicitar código de acceso único
+      description: Envía un código de 6 dígitos al correo para login sin contraseña
+      tags: [🔐 Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '200':
+          description: ✅ Código enviado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: ❌ Email no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/ServerError'
 
   /api/auth/login-with-code:
     post:
-      summary: Iniciar sesión usando un código de acceso único (login sin contraseña)
-      tags: [Auth]
+      summary: 🔑 Iniciar sesión con código
+      description: Autentica al usuario usando el código enviado por correo
+      tags: [🔐 Authentication]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [email, code]
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: usuario@correo.com
-                code:
-                  type: string
-                  example: "123456"
+              $ref: '#/components/schemas/LoginWithCodeRequest'
       responses:
         '200':
-          description: Sesión iniciada exitosamente
+          description: ✅ Sesión iniciada exitosamente
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                    description: Token JWT de autenticación
+                $ref: '#/components/schemas/TokenResponse'
         '400':
-          description: Código inválido o expirado
+          description: ❌ Código inválido o expirado
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Código inválido o expirado
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno del servidor
-
-  /api/auth/send-login-code:
-    post:
-      summary: Solicitar código de acceso único (login sin contraseña)
-      tags: [Auth]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email]
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: usuario@correo.com
-      responses:
-        '200':
-          description: Código enviado exitosamente al correo registrado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Código enviado al correo."
-        '400':
-          description: Error, correo no encontrado o campo faltante
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Correo es obligatorio."
-        '500':
-          description: Error interno del servidor
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error inesperado."
+          $ref: '#/components/responses/ServerError'
 
   /api/auth/forgot-password:
     post:
-      summary: Solicitar enlace para restablecer contraseña.
-      tags: [Auth]
+      summary: 🔄 Solicitar recuperación de contraseña
+      description: Envía un enlace de recuperación al correo del usuario
+      tags: [🔐 Authentication]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - email
-              properties:
-                email:
-                  type: string
-                  example: usuario@gmail.com
+              $ref: '#/components/schemas/EmailRequest'
       responses:
         '200':
-          description: Enlace de recuperación enviado si el correo está registrado.
+          description: ✅ Enlace de recuperación enviado
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Correo enviado con enlace de recuperación.
-                  obfuscatedEmail:
-                    type: string
-                    example: "*****os@gmail.com"
+                $ref: '#/components/schemas/ForgotPasswordResponse'
         '400':
-          description: El campo email es obligatorio.
+          $ref: '#/components/responses/BadRequest'
         '500':
-          description: Error interno del servidor.
+          $ref: '#/components/responses/ServerError'
 
   /api/auth/reset-password/{token}:
     post:
-      summary: Cambiar contraseña usando enlace con token.
-      tags: [Auth]
+      summary: 🔐 Restablecer contraseña
+      description: Cambia la contraseña usando el token de recuperación
+      tags: [🔐 Authentication]
       parameters:
         - name: token
           in: path
           required: true
           schema:
             type: string
-          description: Token único enviado al correo del usuario.
+          description: Token de recuperación enviado por correo
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - new_password
-                - confirm_password
-              properties:
-                new_password:
-                  type: string
-                  example: NuevaClave123
-                confirm_password:
-                  type: string
-                  example: NuevaClave123
+              $ref: '#/components/schemas/ResetPasswordRequest'
       responses:
         '200':
-          description: Contraseña actualizada con éxito.
+          description: ✅ Contraseña actualizada con éxito
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Contraseña actualizada con éxito.
+                $ref: '#/components/schemas/SuccessMessage'
         '400':
-          description: Token inválido, expirado o contraseñas no coinciden.
+          description: ❌ Token inválido o contraseñas no coinciden
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Token inválido o expirado.
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error interno del servidor.
+          $ref: '#/components/responses/ServerError'
 
   /api/auth/profile:
     get:
-      summary: Obtener perfil del usuario autenticado.
-      description: Retorna los datos del usuario logueado usando su token JWT.
-      tags: [Auth]
+      summary: 👤 Obtener perfil del usuario autenticado
+      description: Retorna los datos del usuario logueado
+      tags: [👤 Profile]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Perfil obtenido con éxito.
+          description: ✅ Perfil obtenido con éxito
           content:
             application/json:
               schema:
@@ -255,9 +242,9 @@ paths:
 
   /api/auth/change-password:
     put:
-      summary: Cambiar la contraseña del usuario autenticado.
-      description: Permite al usuario cambiar su contraseña.
-      tags: [Auth]
+      summary: 🔒 Cambiar contraseña
+      description: Permite al usuario cambiar su contraseña actual
+      tags: [🔐 Authentication]
       security:
         - bearerAuth: []
       requestBody:
@@ -268,594 +255,132 @@ paths:
               $ref: '#/components/schemas/ChangePasswordRequest'
       responses:
         '200':
-          description: Contraseña actualizada correctamente.
+          description: ✅ Contraseña actualizada correctamente
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Contraseña actualizada correctamente.
+                $ref: '#/components/schemas/SuccessMessage'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
-    put:
-      summary: Cambiar la contraseña del usuario autenticado
-      description: Permite al usuario cambiar su contraseña. Si mustChangePassword es true, se actualiza a false.
-      tags: [Auth]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChangePasswordRequest'
-      responses:
-        '200':
-          description: Contraseña actualizada correctamente
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Contraseña actualizada correctamente.
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
 
   /api/auth/check-email:
-    get:
-      summary: Verificar si un correo ya está registrado
-      tags: [auth]
-      parameters:
-        - in: query
-          name: email
-          required: true
-          schema:
-            type: string
-            format: email
-          description: Correo electrónico a verificar
-      responses:
-        '200':
-          description: El correo está registrado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  exists:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: El correo ya está registrado ✅
-        '404':
-          description: El correo no está registrado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  exists:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: El correo no está registrado ❌
-        '400':
-          description: Falta el parámetro `email`
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Email es requerido
-
-  /api/students/register-clinic:
     post:
-      summary: Registrar datos clínicos del student
-      tags: [student]
-      security:
-        - bearerAuth: []
+      summary: ✉️ Verificar disponibilidad de email
+      description: Verifica si un correo electrónico ya está registrado
+      tags: [🔐 Authentication]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ClinicalProfileInput'
+              $ref: '#/components/schemas/EmailRequest'
       responses:
-        '201':
-          description: Perfil clínico y diagnóstico registrados correctamente
+        '200':
+          description: ✅ Verificación completada
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClinicalProfileResponse'
+                $ref: '#/components/schemas/CheckEmailResponse'
         '400':
-          description: Perfil ya existe
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/ServerError'
-  
-  /api/students/clinic-profile:
-    get:
-      summary: Obtener perfil clínico del student
-      tags: [student]
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Perfil clínico encontrado
-        '404':
-          description: Perfil no encontrado
-    put:
-      summary: Actualizar perfil clínico del student
-      tags: [student]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ClinicProfileRequest'
-      responses:
-        '200':
-          description: Perfil clínico actualizado correctamente
-        '400':
-          description: Datos inválidos
-        '404':
-          description: Perfil no encontrado
-    delete:
-      summary: Eliminar perfil clínico del student
-      tags: [student]
-      security:
-        - bearerAuth: []
-      responses:
-        '204':
-          description: Perfil eliminado correctamente
-        '404':
-          description: Perfil no encontrado
-
-  /api/students/blood-analysis:
-    get:
-      summary: Obtener datos de análisis de sangre del usuario
-      description: |
-        Devuelve únicamente los valores de laboratorio clínico sin predicciones de ML.
-        
-        **Casos de uso:**
-        - Prellenar formularios de edición de perfil clínico
-        - Mostrar datos actuales sin diagnósticos
-        - Integración con sistemas externos de laboratorio
-        
-        **Nota:** Requiere que el usuario haya registrado previamente su perfil clínico.
-      tags: [student]
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Datos de análisis de sangre obtenidos correctamente
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          description: ❌ Tipo de contenido no soportado
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    description: Indica si la operación fue exitosa
-                    example: true
-                  bloodAnalysis:
-                    type: object
-                    description: Objeto conteniendo todos los valores de análisis de sangre
-                    properties:
-                      age:
-                        type: integer
-                        description: Edad del paciente en años
-                        minimum: 16
-                        maximum: 35
-                        example: 25
-                      gender:
-                        type: string
-                        description: Género del paciente
-                        enum: [Male, Female]
-                        example: "Male"
-                      bmi:
-                        type: number
-                        format: float
-                        description: Índice de Masa Corporal (kg/m²)
-                        minimum: 0
-                        example: 23.5
-                      hbA1c:
-                        type: number
-                        format: float
-                        description: Hemoglobina glicosilada (%)
-                        minimum: 0
-                        example: 5.8
-                      blood_glucose_level:
-                        type: number
-                        format: float
-                        description: Nivel de glucosa en sangre (mg/dL)
-                        minimum: 0
-                        example: 95
-                      hemoglobin:
-                        type: number
-                        format: float
-                        description: Nivel de hemoglobina (g/dL)
-                        minimum: 0
-                        example: 14.2
-                      insulin:
-                        type: number
-                        format: float
-                        description: Nivel de insulina (μU/mL)
-                        minimum: 0
-                        example: 85
-                      triglycerides:
-                        type: number
-                        format: float
-                        description: Nivel de triglicéridos (mg/dL)
-                        minimum: 0
-                        example: 150
-                      hematocrit:
-                        type: number
-                        format: float
-                        description: Porcentaje de hematocrito (%)
-                        minimum: 0
-                        example: 42
-                      red_blood_cells:
-                        type: number
-                        format: float
-                        description: Conteo de glóbulos rojos (millones/μL)
-                        minimum: 0
-                        example: 4.5
-                      smoking_history:
-                        type: string
-                        description: Historial de tabaquismo del paciente
-                        enum: [Never, Former, Current, Ever, Not Current, No Info]
-                        example: "Never"
-                example:
-                  success: true
-                  bloodAnalysis:
-                    age: 25
-                    gender: "Male"
-                    bmi: 23.5
-                    hbA1c: 5.8
-                    blood_glucose_level: 95
-                    hemoglobin: 14.2
-                    insulin: 85
-                    triglycerides: 150
-                    hematocrit: 42
-                    red_blood_cells: 4.5
-                    smoking_history: "Never"
-        '404':
-          description: Perfil clínico no encontrado - El usuario no ha registrado su perfil clínico
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Perfil clínico no encontrado"
-              example:
-                error: "Perfil clínico no encontrado"
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          description: Acceso denegado - Solo estudiantes pueden acceder
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Acceso denegado. Solo estudiantes."
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /api/students/analyze-recommendation:
+  /api/auth/check-dni:
     post:
-      summary: Enviar hábitos y generar recomendación personalizada
-      tags: [student]
-      security:
-        - bearerAuth: []
+      summary: 🆔 Verificar disponibilidad de DNI
+      description: Verifica si un número de documento ya está registrado
+      tags: [🔐 Authentication]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [habits]
-              properties:
-                habits:
-                  type: object
-                  properties:
-                    comidas_dia:
-                      type: string
-                    frutas_verduras:
-                      type: string
-                    alergias:
-                      type: string
-                    bebidas_azucaradas:
-                      type: string
-                    actividad_fisica:
-                      type: string
-                    objetivo_alimentacion:
-                      type: string
-                    ultraprocesados:
-                      type: string
-                    estres:
-                      type: string
-                    energia_fatiga:
-                      type: string
-                    comidas_fuera:
-                      type: string
-                  example:
-                    comidas_dia: "3"
-                    frutas_verduras: "2-3"
-                    alergias: "Intolerancia a la lactosa"
-                    bebidas_azucaradas: "1-2 veces por semana"
-                    actividad_fisica: "Moderado"
-                    objetivo_alimentacion: "Bajar"
-                    ultraprocesados: "3+ veces"
-                    estres: "Alto"
-                    energia_fatiga: "A veces"
-                    comidas_fuera: "3-5 veces por semana"
-      responses:
-        '201':
-          description: Recomendaciones generadas exitosamente
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Recomendaciones generadas y guardadas correctamente 🧠🍽️
-                  condition:
-                    type: string
-                    example: Anemia
-                  recommendations:
-                    type: array
-                    items:
-                      type: string
-                    example: ["Hierro", "Vitamina C", "Fibra"]
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '500': { $ref: '#/components/responses/ServerError' }
-  /api/students/analysis/{id}:
-    get:
-      summary: Obtener un análisis específico por ID
-      tags: [student]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
+              $ref: '#/components/schemas/CheckDniRequest'
       responses:
         '200':
-          description: Análisis recuperado correctamente
+          description: ✅ DNI ya registrado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AnalysisLog'
+                $ref: '#/components/schemas/CheckDniResponse'
         '404':
-          description: Análisis no encontrado
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/ServerError'
-  /api/students/analysis-history:
-    get:
-      summary: Ver historial de análisis del student
-      tags: [student]
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Historial recuperado correctamente
+          description: 🆓 DNI disponible
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  history:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/AnalysisLog'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '500': { $ref: '#/components/responses/ServerError' }
-  /api/students/recommendations:
-    get:
-      summary: Obtener última recomendación generada del student
-      tags: [student]
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Última recomendación encontrada correctamente
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  condition:
-                    type: string
-                    example: Diabetes
-                  recommendations:
-                    type: array
-                    items:
-                      type: string
-                    example: ["Verduras sin almidón", "Vitamina C"]
-        '404':
-          description: No se encontró recomendación
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: No se encontraron recomendaciones para este usuario.
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: '#/components/schemas/CheckDniResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /api/students/health-status:
-    get:
-      summary: Obtener estado de salud del usuario
-      description: Retorna la condición de salud y la probabilidad asociada.
-      tags: [student]
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Estado de salud y probabilidad obtenidos con éxito
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  health_condition:
-                    type: string
-                    example: "Diabetes"
-                  probability:
-                    type: number
-                    example: 90.17
-        '401':
-          description: Token no proporcionado o inválido
-        '500':
-          description: Error interno del servidor
-        '401':
-          description: No se proporcionó un token válido
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Token no proporcionado"
-        '404':
-          description: No se han encontrado datos clínicos para el usuario
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "No se ha registrado análisis clínico para este usuario"
-        '500':
-          description: Error interno del servidor
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Error inesperado"
+  # =============================================================================
+  # 🎓 STUDENT ENDPOINTS
+  # =============================================================================
 
   /api/students/profile:
     get:
-      summary: Obtener perfil del estudiante autenticado
-      tags: [student]
+      summary: 👨‍🎓 Obtener perfil completo del estudiante
+      description: Retorna el perfil del estudiante con información de salud si está disponible
+      tags: [👤 Profile]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Perfil del estudiante obtenido con éxito
+          description: ✅ Perfil del estudiante obtenido con éxito
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  profile:
-                    type: object
-                    properties:
-                      first_name: { type: string }
-                      last_name: { type: string }
-                      middle_name: { type: string }
-                      email: { type: string }
-                      document_number: { type: string }
-                      profile_image: { type: string }
-                      about_me: { type: string }
-                      social_links:
-                        type: object
-                        additionalProperties:
-                          type: string
-                  health_condition:
-                    type: string
-                    example: "Anemia"
-                  probability:
-                    type: number
-                    example: 90.17
-                  has_recommendation:
-                    type: boolean
-                    example: true
+                $ref: '#/components/schemas/StudentProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/students/update-name:
+    put:
+      summary: ✏️ Actualizar nombres del estudiante
+      tags: [👤 Profile]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNameRequest'
+      responses:
+        '200':
+          description: ✅ Nombres actualizados correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
-  /api/students/update-name:
-    put:
-      summary: Actualizar nombres del usuario autenticado
-      tags: [student]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [first_name, middle_name, last_name]
-              properties:
-                first_name:
-                  type: string
-                  example: Luis
-                middle_name:
-                  type: string
-                  example: Alberto
-                last_name:
-                  type: string
-                  example: Rojas
-      responses:
-        '200':
-          description: Nombre actualizado correctamente
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ServerError' }
 
   /api/students/update-email:
     put:
-      summary: Solicitar cambio de correo electrónico del estudiante
-      description: Envia un correo de verificación al nuevo email ingresado. El cambio se realiza al confirmar el enlace.
-      tags: [student]
+      summary: 📧 Solicitar cambio de email
+      description: Envía un correo de verificación para cambiar el email
+      tags: [👤 Profile]
       security:
         - bearerAuth: []
       requestBody:
@@ -863,62 +388,59 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [new_email]
-              properties:
-                new_email:
-                  type: string
-                  format: email
-                  example: nuevo.email@example.com
+              $ref: '#/components/schemas/UpdateEmailRequest'
       responses:
         '200':
-          description: Correo de verificación enviado correctamente
+          description: ✅ Correo de verificación enviado
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Se ha enviado un correo para confirmar el nuevo email.
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ServerError' }
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: ⚠️ Email ya está en uso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /api/students/confirm-email-change:
     get:
-      tags:
-        - Student
-      summary: Confirmar cambio de correo electrónico
-      description: Verifica el token recibido por correo y actualiza el correo del usuario.
+      summary: ✅ Confirmar cambio de email
+      description: Confirma el cambio de email usando el token enviado por correo
+      tags: [👤 Profile]
       parameters:
         - name: token
           in: query
           required: true
           schema:
             type: string
-          description: Token JWT enviado al correo
+          description: Token de confirmación enviado por correo
       responses:
         '200':
-          description: Correo actualizado correctamente
+          description: ✅ Email actualizado correctamente
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Correo actualizado correctamente ✅
+                $ref: '#/components/schemas/SuccessMessage'
         '400':
-          description: Token inválido o expirado
+          description: ❌ Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Usuario no encontrado
-  
-  
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/students/update-photo:
     put:
-      summary: Actualizar la foto de perfil del estudiante
-      tags: [student]
+      summary: 📸 Actualizar foto de perfil
+      tags: [👤 Profile]
       security:
         - bearerAuth: []
       requestBody:
@@ -931,29 +453,29 @@ paths:
                 image:
                   type: string
                   format: binary
-                  description: Imagen del perfil (JPG, PNG)
+                  description: Imagen del perfil (JPG, PNG, máximo 5MB)
       responses:
         '200':
-          description: Foto actualizada correctamente
+          description: ✅ Foto actualizada correctamente
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Foto de perfil actualizada.
-                  profile_image:
-                    type: string
-                    example: https://nutriscanu.com/uploads/profile-images/mi-foto.jpg
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ServerError' }
+                $ref: '#/components/schemas/UpdatePhotoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          description: 📦 Archivo muy grande
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /api/students/update-about:
     put:
-      summary: Actualizar la descripción "Sobre mí" del estudiante
-      tags: [student]
+      summary: ✍️ Actualizar descripción personal
+      tags: [👤 Profile]
       security:
         - bearerAuth: []
       requestBody:
@@ -961,31 +483,23 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                about_me:
-                  type: string
-                  example: "Estudiante de ingeniería apasionado por la IA."
+              $ref: '#/components/schemas/UpdateAboutRequest'
       responses:
         '200':
-          description: Descripción actualizada correctamente
+          description: ✅ Descripción actualizada correctamente
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  about_me:
-                    type: string
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ServerError' }
+                $ref: '#/components/schemas/UpdateAboutResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /api/students/update-socials:
     put:
-      summary: Actualizar redes sociales del estudiante
-      tags: [student]
+      summary: 🌐 Actualizar redes sociales
+      tags: [👤 Profile]
       security:
         - bearerAuth: []
       requestBody:
@@ -993,101 +507,284 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                facebook:
-                  type: string
-                  example: "https://facebook.com/usuario"
-                instagram:
-                  type: string
-                  example: "https://instagram.com/usuario"
-                twitter:
-                  type: string
-                  example: "https://twitter.com/usuario"
-                linkedin:
-                  type: string
-                  example: "https://linkedin.com/in/usuario"
+              $ref: '#/components/schemas/UpdateSocialsRequest'
       responses:
         '200':
-          description: Redes sociales actualizadas correctamente
+          description: ✅ Redes sociales actualizadas correctamente
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  social_links:
-                    type: object
-                    additionalProperties:
-                      type: string
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ServerError' }
+                $ref: '#/components/schemas/UpdateSocialsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
-  /api/auth/check-dni:
+  # Clinical Profile Endpoints
+  /api/students/register-clinic:
     post:
-      summary: Verifica si un DNI ya está registrado
-      tags:
-        - Autenticación
+      summary: 🏥 Registrar perfil clínico
+      description: Registra los datos clínicos del estudiante y genera diagnóstico inicial
+      tags: [🏥 Clinical Profile]
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                document_number:
-                  type: string
-                  example: "12345678"
-                  description: Número de DNI a verificar (8 dígitos)
+              $ref: '#/components/schemas/ClinicalProfileInput'
+      responses:
+        '201':
+          description: ✅ Perfil clínico registrado y diagnóstico generado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClinicalProfileResponse'
+        '400':
+          description: ⚠️ Perfil clínico ya existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/students/clinic-profile:
+    get:
+      summary: 📋 Obtener perfil clínico
+      tags: [🏥 Clinical Profile]
+      security:
+        - bearerAuth: []
       responses:
         '200':
-          description: El DNI ya está registrado
+          description: ✅ Perfil clínico encontrado
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  exists:
-                    type: boolean
-                  message:
-                    type: string
+                $ref: '#/components/schemas/ClinicalProfile'
         '404':
-          description: El DNI no está registrado
+          description: ❌ Perfil clínico no encontrado
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  exists:
-                    type: boolean
-                  message:
-                    type: string
-        '400':
-          description: Error por falta de DNI
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
-          description: Error del servidor
+          $ref: '#/components/responses/ServerError'
+    
+    put:
+      summary: 🔄 Actualizar perfil clínico
+      tags: [🏥 Clinical Profile]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClinicalProfileInput'
+      responses:
+        '200':
+          description: ✅ Perfil clínico actualizado correctamente
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
+                $ref: '#/components/schemas/ClinicalProfileResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    
+    delete:
+      summary: 🗑️ Eliminar perfil clínico
+      tags: [🏥 Clinical Profile]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: ✅ Perfil clínico eliminado correctamente
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
+  /api/students/blood-analysis:
+    get:
+      summary: 🩸 Obtener datos de análisis de sangre
+      description: |
+        Retorna únicamente los valores de laboratorio clínico sin predicciones de ML.
+        Útil para prellenar formularios y mostrar datos actuales.
+      tags: [🩸 Blood Analysis]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: ✅ Datos de análisis obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BloodAnalysisResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: ❌ Perfil clínico no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/students/health-status:
+    get:
+      summary: ❤️ Obtener estado de salud
+      description: Retorna la condición de salud actual y probabilidad del diagnóstico
+      tags: [🏥 Clinical Profile]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: ✅ Estado de salud obtenido con éxito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: ❌ No se han encontrado datos clínicos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # Recommendations Endpoints
+  /api/students/analyze-recommendation:
+    post:
+      summary: 🧠 Generar recomendaciones personalizadas
+      description: Analiza los hábitos del usuario y genera recomendaciones nutricionales basadas en su perfil clínico
+      tags: [💡 Recommendations]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HabitsAnalysisRequest'
+      responses:
+        '201':
+          description: ✅ Recomendaciones generadas exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: ❌ Perfil clínico no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/students/recommendations:
+    get:
+      summary: 💡 Obtener última recomendación
+      description: Retorna la última recomendación nutricional generada para el usuario
+      tags: [💡 Recommendations]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: ✅ Última recomendación encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LastRecommendationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: ❌ No se encontraron recomendaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/students/analysis-history:
+    get:
+      summary: 📊 Obtener historial de análisis
+      description: Retorna el historial completo de análisis y recomendaciones del estudiante
+      tags: [📊 Analysis History]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: ✅ Historial recuperado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/students/analysis/{id}:
+    get:
+      summary: 🔍 Obtener análisis específico
+      description: Retorna un análisis específico por su ID
+      tags: [📊 Analysis History]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID del análisis
+      responses:
+        '200':
+          description: ✅ Análisis recuperado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisLog'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # =============================================================================
+  # 👨‍💼 ADMIN ENDPOINTS
+  # =============================================================================
 
   /api/admin/users:
     get:
-      summary: Listar usuarios con paginación (excepto el admin actual)
-      tags: [Admin]
+      summary: 👥 Listar usuarios con paginación
+      description: Obtiene una lista paginada de usuarios (excepto el admin actual)
+      tags: [👨‍💼 Admin]
       security:
         - bearerAuth: []
       parameters:
@@ -1096,53 +793,48 @@ paths:
           schema:
             type: integer
             default: 1
+            minimum: 1
+          description: Número de página
         - name: limit
           in: query
           schema:
             type: integer
             default: 10
+            minimum: 1
+            maximum: 100
+          description: Elementos por página
         - name: orderBy
           in: query
           schema:
             type: string
             enum: [first_name, last_name, email, createdAt]
             default: createdAt
+          description: Campo para ordenar
         - name: orderDir
           in: query
           schema:
             type: string
             enum: [asc, desc]
             default: desc
+          description: Dirección del ordenamiento
       responses:
         '200':
-          description: Lista de usuarios paginada
+          description: ✅ Lista de usuarios obtenida con éxito
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  users:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/UserResponse'
-                  page:
-                    type: integer
-                  limit:
-                    type: integer
-                  total:
-                    type: integer
-                  pages:
-                    type: integer
+                $ref: '#/components/schemas/UsersListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/ServerError'
+
   /api/admin/users/{id}:
     get:
-      summary: Obtener un usuario por ID
-      tags: [Admin]
+      summary: 🔍 Obtener usuario por ID
+      tags: [👨‍💼 Admin]
       security:
         - bearerAuth: []
       parameters:
@@ -1151,21 +843,28 @@ paths:
           required: true
           schema:
             type: integer
+          description: ID del usuario
       responses:
         '200':
-          description: Usuario encontrado
+          description: ✅ Usuario encontrado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ServerError' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/admin/users/{id}/role:
     put:
-      summary: Cambiar el rol de un usuario
-      tags: [Admin]
+      summary: 🔄 Cambiar rol de usuario
+      description: Actualiza el rol de un usuario específico
+      tags: [👨‍💼 Admin]
       security:
         - bearerAuth: []
       parameters:
@@ -1174,52 +873,74 @@ paths:
           required: true
           schema:
             type: integer
+          description: ID del usuario
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                role:
-                  type: string
-                  enum: [student, admin]
-              example:
-                role: admin
+              $ref: '#/components/schemas/UpdateRoleRequest'
       responses:
         '200':
-          description: Rol actualizado con éxito
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '500': { $ref: '#/components/responses/ServerError' }
-  /api/admin/audit-logs:
-    get:
-      summary: Ver historial de acciones del administrador
-      description: Devuelve las acciones realizadas por el admin autenticado (como eliminar o actualizar usuarios)
-      tags: [Auditoría]
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Historial obtenido con éxito
+          description: ✅ Rol actualizado con éxito
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  logs:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/AuditLog'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '500': { $ref: '#/components/responses/ServerError' }
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/admin/users/{id}/restore:
+    put:
+      summary: ♻️ Restaurar usuario eliminado
+      description: Restaura un usuario previamente eliminado (soft delete)
+      tags: [👨‍💼 Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID del usuario a restaurar
+      responses:
+        '200':
+          description: ✅ Usuario restaurado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          description: ⚠️ El usuario no está eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/admin/students:
     post:
-      summary: Crear student con contraseña temporal generada automáticamente
-      description: Solo administradores pueden crear students. Se genera una contraseña temporal que debe ser cambiada en el primer login.
-      tags: [Admin]
+      summary: ➕ Crear estudiante con contraseña temporal
+      description: |
+        Crea un nuevo estudiante con una contraseña temporal generada automáticamente.
+        El estudiante debe cambiar la contraseña en su primer login.
+      tags: [👨‍💼 Admin]
       security:
         - bearerAuth: []
       requestBody:
@@ -1230,77 +951,68 @@ paths:
               $ref: '#/components/schemas/CreateStudentRequest'
       responses:
         '201':
-          description: student creado correctamente
+          description: ✅ Estudiante creado correctamente
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: student registrado correctamente.
-                  temporalPassword:
-                    type: string
-                    example: a1b2c3d4
-                  user:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      name:
-                        type: string
-                      email:
-                        type: string
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '500': { $ref: '#/components/responses/ServerError' }
-  /api/admin/users/{id}/restore:
-    put:
-      summary: Restaurar usuario eliminado (soft delete)
-      description: Restaura un usuario previamente eliminado (requiere ser admin)
-      tags: [Admin]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Usuario restaurado correctamente
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Usuario restaurado correctamente ✅
+                $ref: '#/components/schemas/CreateStudentResponse'
         '400':
-          description: El usuario no está eliminado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: El usuario no está eliminado.
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '409':
+          description: ⚠️ Email o DNI ya registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/ServerError'
 
+  # =============================================================================
+  # 📋 AUDIT ENDPOINTS
+  # =============================================================================
 
+  /api/admin/audit-logs:
+    get:
+      summary: 📝 Obtener logs de auditoría
+      description: Retorna el historial de acciones realizadas por el administrador autenticado
+      tags: [📋 Audit]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: ✅ Logs de auditoría obtenidos con éxito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
-
+# =============================================================================
+# 🔧 COMPONENTS
+# =============================================================================
 
 components:
   securitySchemes:
@@ -1308,360 +1020,948 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: 🔑 Token JWT obtenido del endpoint de login
 
   responses:
     Unauthorized:
-      description: Token inválido o no enviado
+      description: ❌ Token inválido, expirado o no proporcionado
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Token inválido
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Token inválido o expirado"
 
     Forbidden:
-      description: Acceso denegado
+      description: 🚫 Acceso denegado - Permisos insuficientes
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: No tienes permisos para acceder
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "No tienes permisos para acceder a este recurso"
 
     NotFound:
-      description: Recurso no encontrado
+      description: ❌ Recurso no encontrado
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Usuario no encontrado
-
-    ServerError:
-      description: Error interno del servidor
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Error inesperado
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Recurso no encontrado"
 
     BadRequest:
-      description: Datos inválidos enviados
+      description: ⚠️ Datos inválidos o campos requeridos faltantes
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Faltan campos obligatorios
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Faltan campos obligatorios"
+
+    ServerError:
+      description: 💥 Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Error interno del servidor"
 
   schemas:
+    # =============================================================================
+    # 🔧 COMMON SCHEMAS
+    # =============================================================================
+    
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: 📝 Mensaje de error descriptivo
+      required: [error]
+      example:
+        error: "Mensaje de error descriptivo"
+
+    SuccessMessage:
+      type: object
+      properties:
+        message:
+          type: string
+          description: ✅ Mensaje de éxito
+      required: [message]
+      example:
+        message: "Operación completada con éxito"
+
+    TokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: 🔑 Token JWT de autenticación
+      required: [token]
+      example:
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    # =============================================================================
+    # 👤 USER SCHEMAS
+    # =============================================================================
+
     UserResponse:
       type: object
       properties:
-        id: { type: integer }
-        first_name: { type: string }
-        last_name: { type: string }
-        middle_name: { type: string }
-        document_number: { type: string }
-        email: { type: string }
-        role: { type: string }
+        id:
+          type: integer
+          description: 🆔 ID único del usuario
+        first_name:
+          type: string
+          description: 👤 Primer nombre
+        last_name:
+          type: string
+          description: 👤 Apellido paterno
+        middle_name:
+          type: string
+          description: 👤 Apellido materno
+        document_number:
+          type: string
+          description: 🆔 Número de documento de identidad
+        email:
+          type: string
+          format: email
+          description: 📧 Correo electrónico
+        role:
+          type: string
+          enum: [student, admin]
+          description: 👥 Rol del usuario
+        profile_image:
+          type: string
+          nullable: true
+          description: 📸 URL de la imagen de perfil
+        about_me:
+          type: string
+          nullable: true
+          description: ✍️ Descripción personal
+        social_links:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+          description: 🌐 Enlaces a redes sociales
+        createdAt:
+          type: string
+          format: date-time
+          description: 📅 Fecha de creación
+      example:
+        id: 1
+        first_name: "Juan"
+        last_name: "Pérez"
+        middle_name: "García"
+        document_number: "12345678"
+        email: "juan.perez@example.com"
+        role: "student"
+        profile_image: "http://localhost:5000/uploads/profile-images/user-1.jpg"
+        about_me: "Estudiante de nutrición interesado en vida saludable"
+        social_links:
+          facebook: "https://facebook.com/juan.perez"
+          instagram: "https://instagram.com/juan.perez"
+        createdAt: "2024-01-15T10:30:00Z"
+
+    # =============================================================================
+    # 🔐 AUTHENTICATION SCHEMAS
+    # =============================================================================
 
     RegisterRequest:
       type: object
+      required: [first_name, last_name, middle_name, document_number, email, password, confirm_password]
       properties:
-        first_name: { type: string }
-        last_name: { type: string }
-        middle_name: { type: string }
-        document_number: { type: string }
-        email: { type: string }
-        password: { type: string }
-        confirm_password: { type: string }
-      required: [first_name, last_name, middle_name, document_number, email, password]
+        first_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$'
+          description: 👤 Primer nombre
+        last_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$'
+          description: 👤 Apellido paterno
+        middle_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$'
+          description: 👤 Apellido materno
+        document_number:
+          type: string
+          pattern: '^\d{8}$'
+          description: 🆔 DNI de 8 dígitos
+        email:
+          type: string
+          format: email
+          description: 📧 Correo electrónico válido
+        password:
+          type: string
+          minLength: 6
+          description: 🔒 Contraseña (mínimo 6 caracteres)
+        confirm_password:
+          type: string
+          description: 🔒 Confirmación de contraseña (debe coincidir)
       example:
-        first_name: Luis
-        last_name: Ramos
-        middle_name: Pérez
+        first_name: "Luis"
+        last_name: "Ramos"
+        middle_name: "Pérez"
         document_number: "12345678"
-        email: luis@example.com
-        password: clave123
+        email: "luis.ramos@example.com"
+        password: "micontraseña123"
+        confirm_password: "micontraseña123"
 
     LoginRequest:
       type: object
-      properties:
-        email: { type: string }
-        password: { type: string }
       required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: 📧 Correo electrónico registrado
+        password:
+          type: string
+          description: 🔒 Contraseña del usuario
       example:
-        email: "luis@example.com"
-        password: clave123
+        email: "luis.ramos@example.com"
+        password: "micontraseña123"
 
-    UpdateUserRequest:
+    LoginResponse:
       type: object
       properties:
-        first_name: { type: string }
-        last_name: { type: string }
-        middle_name: { type: string }
-        document_number: { type: string }
-        email: { type: string }
-        password: { type: string }
-        role: { type: string }
+        token:
+          type: string
+          description: 🔑 Token JWT de autenticación
+        mustChangePassword:
+          type: boolean
+          description: 🔄 Indica si el usuario debe cambiar su contraseña
+      required: [token, mustChangePassword]
       example:
-        first_name: Camila
-        last_name: Luján
-        middle_name: Díaz
-        document_number: "98765432"
-        email: camila@example.com
-        password: nuevacontra456
-        role: admin
-        
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        mustChangePassword: false
+
+    LoginWithCodeRequest:
+      type: object
+      required: [email, code]
+      properties:
+        email:
+          type: string
+          format: email
+          description: 📧 Correo electrónico registrado
+        code:
+          type: string
+          pattern: '^\d{6}$'
+          description: 🔢 Código de 6 dígitos enviado por correo
+      example:
+        email: "usuario@example.com"
+        code: "123456"
+
+    EmailRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          description: 📧 Dirección de correo electrónico
+      example:
+        email: "usuario@example.com"
+
+    ForgotPasswordResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        obfuscatedEmail:
+          type: string
+          description: 📧 Email ofuscado para confirmar el envío
+      example:
+        message: "Correo enviado con enlace de recuperación"
+        obfuscatedEmail: "u****o@example.com"
+
+    ResetPasswordRequest:
+      type: object
+      required: [new_password, confirm_password]
+      properties:
+        new_password:
+          type: string
+          minLength: 6
+          description: 🔒 Nueva contraseña
+        confirm_password:
+          type: string
+          description: 🔒 Confirmación de la nueva contraseña
+      example:
+        new_password: "nuevacontraseña123"
+        confirm_password: "nuevacontraseña123"
+
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password, confirm_password]
+      properties:
+        current_password:
+          type: string
+          description: 🔒 Contraseña actual
+        new_password:
+          type: string
+          minLength: 6
+          description: 🔒 Nueva contraseña
+        confirm_password:
+          type: string
+          description: 🔒 Confirmación de la nueva contraseña
+      example:
+        current_password: "contraseñaactual"
+        new_password: "nuevacontraseña123"
+        confirm_password: "nuevacontraseña123"
+
+    CheckEmailResponse:
+      type: object
+      properties:
+        exists:
+          type: boolean
+          description: ✅ Indica si el correo ya está registrado
+        message:
+          type: string
+          description: 📝 Mensaje descriptivo del resultado
+      required: [exists, message]
+      example:
+        exists: false
+        message: "El correo electrónico está disponible"
+
+    CheckDniRequest:
+      type: object
+      required: [document_number]
+      properties:
+        document_number:
+          type: string
+          pattern: '^\d{8}$'
+          description: 🆔 Número de DNI a verificar
+      example:
+        document_number: "12345678"
+
+    CheckDniResponse:
+      type: object
+      properties:
+        exists:
+          type: boolean
+          description: ✅ Indica si el DNI ya está registrado
+        message:
+          type: string
+          description: 📝 Mensaje descriptivo del resultado
+      required: [exists, message]
+      example:
+        exists: false
+        message: "El DNI está disponible"
+
+    # =============================================================================
+    # 🎓 STUDENT SCHEMAS
+    # =============================================================================
+
+    StudentProfileResponse:
+      type: object
+      properties:
+        profile:
+          $ref: '#/components/schemas/UserResponse'
+        health_condition:
+          type: string
+          nullable: true
+          description: 🏥 Condición de salud diagnosticada
+        probability:
+          type: number
+          format: float
+          nullable: true
+          description: 📊 Probabilidad del diagnóstico (0-100)
+        has_recommendation:
+          type: boolean
+          description: 💡 Indica si el usuario tiene recomendaciones disponibles
+      example:
+        profile:
+          id: 1
+          first_name: "Ana"
+          last_name: "García"
+          middle_name: "López"
+          email: "ana.garcia@example.com"
+          role: "student"
+        health_condition: "Anemia"
+        probability: 85.7
+        has_recommendation: true
+
+    UpdateNameRequest:
+      type: object
+      required: [first_name, middle_name, last_name]
+      properties:
+        first_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+        middle_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+        last_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+      example:
+        first_name: "Luis"
+        middle_name: "Alberto"
+        last_name: "Rojas"
+
+    UpdateEmailRequest:
+      type: object
+      required: [new_email]
+      properties:
+        new_email:
+          type: string
+          format: email
+          description: 📧 Nuevo correo electrónico
+      example:
+        new_email: "nuevo.email@example.com"
+
+    UpdatePhotoResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        profile_image:
+          type: string
+          description: 📸 URL de la nueva imagen de perfil
+      example:
+        message: "Foto de perfil actualizada correctamente"
+        profile_image: "http://localhost:5000/uploads/profile-images/user-123.jpg"
+
+    UpdateAboutRequest:
+      type: object
+      properties:
+        about_me:
+          type: string
+          maxLength: 500
+          description: ✍️ Descripción personal (máximo 500 caracteres)
+      example:
+        about_me: "Estudiante de ingeniería apasionado por la IA y la nutrición"
+
+    UpdateAboutResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        about_me:
+          type: string
+      example:
+        message: "Descripción actualizada correctamente"
+        about_me: "Estudiante de ingeniería apasionado por la IA y la nutrición"
+
+    UpdateSocialsRequest:
+      type: object
+      properties:
+        facebook:
+          type: string
+          format: uri
+          nullable: true
+        instagram:
+          type: string
+          format: uri
+          nullable: true
+        twitter:
+          type: string
+          format: uri
+          nullable: true
+        linkedin:
+          type: string
+          format: uri
+          nullable: true
+      example:
+        facebook: "https://facebook.com/usuario"
+        instagram: "https://instagram.com/usuario"
+        linkedin: "https://linkedin.com/in/usuario"
+
+    UpdateSocialsResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        social_links:
+          type: object
+          additionalProperties:
+            type: string
+      example:
+        message: "Redes sociales actualizadas correctamente"
+        social_links:
+          facebook: "https://facebook.com/usuario"
+          instagram: "https://instagram.com/usuario"
+
+    # =============================================================================
+    # 🏥 CLINICAL SCHEMAS
+    # =============================================================================
+
     ClinicalProfileInput:
       type: object
-      required:
-        - age
-        - gender
-        - bmi
-        - hbA1c
-        - blood_glucose_level
-        - hemoglobin
-        - insulin
-        - triglycerides
-        - hematocrit
-        - red_blood_cells
-        - smoking_history
+      required: [age, gender, bmi, hbA1c, blood_glucose_level, hemoglobin, insulin, triglycerides, hematocrit, red_blood_cells, smoking_history]
       properties:
-        age: { type: number }
-        gender: { type: string, enum: [Male, Female] }
-        bmi: { type: number }
-        hbA1c: { type: number }
-        blood_glucose_level: { type: number }
-        hemoglobin: { type: number }
-        insulin: { type: number }
-        triglycerides: { type: number }
-        hematocrit: { type: number }
-        red_blood_cells: { type: number }
-        smoking_history: { type: string, enum: [Never, Former, Current, Ever, Not Current, No Info] }
+        age:
+          type: integer
+          minimum: 16
+          maximum: 35
+          description: 📅 Edad del paciente en años
+        gender:
+          type: string
+          enum: [Male, Female]
+          description: 👤 Género del paciente
+        bmi:
+          type: number
+          format: float
+          minimum: 0
+          description: ⚖️ Índice de Masa Corporal (kg/m²)
+        hbA1c:
+          type: number
+          format: float
+          minimum: 0
+          description: 🩸 Hemoglobina glicosilada (%)
+        blood_glucose_level:
+          type: number
+          format: float
+          minimum: 0
+          description: 🍬 Nivel de glucosa en sangre (mg/dL)
+        hemoglobin:
+          type: number
+          format: float
+          minimum: 0
+          description: 🩸 Nivel de hemoglobina (g/dL)
+        insulin:
+          type: number
+          format: float
+          minimum: 0
+          description: 💉 Nivel de insulina (μU/mL)
+        triglycerides:
+          type: number
+          format: float
+          minimum: 0
+          description: 🧬 Nivel de triglicéridos (mg/dL)
+        hematocrit:
+          type: number
+          format: float
+          minimum: 0
+          description: 🩸 Porcentaje de hematocrito (%)
+        red_blood_cells:
+          type: number
+          format: float
+          minimum: 0
+          description: 🔴 Conteo de glóbulos rojos (millones/μL)
+        smoking_history:
+          type: string
+          enum: [Never, Former, Current, Ever, Not Current, No Info]
+          description: 🚬 Historial de tabaquismo
       example:
-        age: 22
-        gender: Male
-        bmi: 26.7
-        hbA1c: 5.9
-        blood_glucose_level: 115
+        age: 25
+        gender: "Male"
+        bmi: 23.5
+        hbA1c: 5.8
+        blood_glucose_level: 95
         hemoglobin: 14.2
-        insulin: 16.5
-        triglycerides: 170
-        hematocrit: 43
-        red_blood_cells: 5.2
-        smoking_history: Former
+        insulin: 85
+        triglycerides: 150
+        hematocrit: 42
+        red_blood_cells: 4.5
+        smoking_history: "Never"
+
+    ClinicalProfile:
+      allOf:
+        - $ref: '#/components/schemas/ClinicalProfileInput'
+        - type: object
+          properties:
+            id:
+              type: integer
+              description: 🆔 ID del perfil clínico
+            user_id:
+              type: integer
+              description: 🆔 ID del usuario
+            condition:
+              type: string
+              description: 🏥 Condición diagnosticada
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
 
     ClinicalProfileResponse:
       type: object
       properties:
         message:
           type: string
-          example: Perfil clínico y diagnóstico registrados correctamente.
+          description: ✅ Mensaje de confirmación
         condicionPrincipal:
           type: string
-          example: Diabetes
+          description: 🏥 Condición de salud principal diagnosticada
         porcentajeDiagnostico:
           type: number
           format: float
-          example: 81.2
+          description: 📊 Porcentaje de probabilidad del diagnóstico principal
         todasLasProbabilidades:
           type: object
           additionalProperties:
             type: number
-          example:
-            Healthy: 5.3
-            Diabetes: 81.2
-            Anemia: 10.5
-            Ambos: 3.0
+          description: 📈 Probabilidades de todas las condiciones analizadas
+      example:
+        message: "Perfil clínico y diagnóstico registrados correctamente"
+        condicionPrincipal: "Diabetes"
+        porcentajeDiagnostico: 81.2
+        todasLasProbabilidades:
+          Healthy: 5.3
+          Diabetes: 81.2
+          Anemia: 10.5
+          Ambos: 3.0
 
-
-    ClinicProfileRequest:
+    BloodAnalysisResponse:
       type: object
-      required:
-        - age
-        - gender
-        - bmi
-        - hbA1c
-        - blood_glucose_level
-        - hemoglobin
-        - insulin
-        - triglycerides
-        - hematocrit
-        - red_blood_cells
-        - condition
       properties:
-        age:
-          type: number
-        gender:
+        success:
+          type: boolean
+          description: ✅ Indica si la operación fue exitosa
+        bloodAnalysis:
+          $ref: '#/components/schemas/ClinicalProfileInput'
+      example:
+        success: true
+        bloodAnalysis:
+          age: 25
+          gender: "Male"
+          bmi: 23.5
+          hbA1c: 5.8
+          blood_glucose_level: 95
+          hemoglobin: 14.2
+          insulin: 85
+          triglycerides: 150
+          hematocrit: 42
+          red_blood_cells: 4.5
+          smoking_history: "Never"
+
+    HealthStatusResponse:
+      type: object
+      properties:
+        health_condition:
           type: string
-          enum: [Male, Female]
-        bmi:
+          description: 🏥 Condición de salud actual
+        probability:
           type: number
-        hbA1c:
-          type: number
-        blood_glucose_level:
-          type: number
-        hemoglobin:
-          type: number
-        insulin:
-          type: number
-        triglycerides:
-          type: number
-        hematocrit:
-          type: number
-        red_blood_cells:
-          type: number
-        smoking_history:
+          format: float
+          description: 📊 Probabilidad del diagnóstico (0-100)
+      example:
+        health_condition: "Diabetes"
+        probability: 90.17
+
+    # =============================================================================
+    # 💡 RECOMMENDATIONS SCHEMAS
+    # =============================================================================
+
+    HabitsAnalysisRequest:
+      type: object
+      required: [habits]
+      properties:
+        habits:
+          type: object
+          required: [comidas_dia, frutas_verduras, alergias, bebidas_azucaradas, actividad_fisica, objetivo_alimentacion, ultraprocesados, estres, energia_fatiga, comidas_fuera]
+          properties:
+            comidas_dia:
+              type: string
+              description: 🍽️ Número de comidas por día
+            frutas_verduras:
+              type: string
+              description: 🥬 Porciones de frutas y verduras diarias
+            alergias:
+              type: string
+              description: ⚠️ Alergias o intolerancias alimentarias
+            bebidas_azucaradas:
+              type: string
+              description: 🥤 Frecuencia de consumo de bebidas azucaradas
+            actividad_fisica:
+              type: string
+              description: 🏃‍♂️ Nivel de actividad física
+            objetivo_alimentacion:
+              type: string
+              description: 🎯 Objetivo nutricional del usuario
+            ultraprocesados:
+              type: string
+              description: 🍟 Frecuencia de consumo de alimentos ultraprocesados
+            estres:
+              type: string
+              description: 😰 Nivel de estrés percibido
+            energia_fatiga:
+              type: string
+              description: ⚡ Niveles de energía y fatiga
+            comidas_fuera:
+              type: string
+              description: 🍽️ Frecuencia de comidas fuera de casa
+          example:
+            comidas_dia: "3"
+            frutas_verduras: "2-3"
+            alergias: "Intolerancia a la lactosa"
+            bebidas_azucaradas: "1-2 veces por semana"
+            actividad_fisica: "Moderado"
+            objetivo_alimentacion: "Mantener peso"
+            ultraprocesados: "3+ veces"
+            estres: "Alto"
+            energia_fatiga: "A veces"
+            comidas_fuera: "3-5 veces por semana"
+
+    RecommendationResponse:
+      type: object
+      properties:
+        message:
           type: string
-          example: Former
+          description: ✅ Mensaje de confirmación
         condition:
           type: string
-          example: Anemia
+          description: 🏥 Condición de salud del usuario
+        recommendations:
+          type: array
+          items:
+            type: string
+          description: 💡 Lista de recomendaciones nutricionales
       example:
-        age: 22
-        gender: Male
-        bmi: 26.7
-        hbA1c: 5.9
-        blood_glucose_level: 115
-        hemoglobin: 14.2
-        insulin: 16.5
-        triglycerides: 170
-        hematocrit: 43
-        red_blood_cells: 5.2
-        smoking_history: Former
-        condition: Anemia
+        message: "Recomendaciones generadas y guardadas correctamente 🧠🍽️"
+        condition: "Anemia"
+        recommendations: ["Hierro", "Vitamina C", "Fibra"]
 
+    LastRecommendationResponse:
+      type: object
+      properties:
+        condition:
+          type: string
+          description: 🏥 Condición de salud
+        recommendations:
+          type: array
+          items:
+            type: string
+          description: 💡 Lista de recomendaciones
+      example:
+        condition: "Diabetes"
+        recommendations: ["Verduras sin almidón", "Vitamina C"]
 
     AnalysisLog:
       type: object
       properties:
         id:
           type: integer
+          description: 🆔 ID del análisis
         condition:
           type: string
+          description: 🏥 Condición diagnosticada
         recommendations:
           type: array
           items:
             type: string
+          description: 💡 Recomendaciones generadas
         createdAt:
           type: string
           format: date-time
-
-    ChangePasswordRequest:
-      type: object
-      required:
-        - current_password
-        - new_password
-        - confirm_password
-      properties:
-        current_password:
-          type: string
-        new_password:
-          type: string
-        confirm_password:
-          type: string
+          description: 📅 Fecha de creación del análisis
       example:
-        current_password: clave123
-        new_password: nuevaclave456
-        confirm_password: nuevaclave456
+        id: 1
+        condition: "Diabetes"
+        recommendations: ["Verduras sin almidón", "Proteínas magras"]
+        createdAt: "2024-01-15T10:30:00Z"
+
+    AnalysisHistoryResponse:
+      type: object
+      properties:
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalysisLog'
+          description: 📊 Lista de análisis históricos
+      example:
+        history:
+          - id: 1
+            condition: "Diabetes"
+            recommendations: ["Verduras sin almidón", "Proteínas magras"]
+            createdAt: "2024-01-15T10:30:00Z"
+          - id: 2
+            condition: "Anemia"
+            recommendations: ["Hierro", "Vitamina C"]
+            createdAt: "2024-01-10T08:15:00Z"
+
+    # =============================================================================
+    # 👨‍💼 ADMIN SCHEMAS
+    # =============================================================================
+
+    UsersListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+        page:
+          type: integer
+          description: 📄 Página actual
+        limit:
+          type: integer
+          description: 📊 Elementos por página
+        total:
+          type: integer
+          description: 🔢 Total de usuarios
+        pages:
+          type: integer
+          description: 📄 Total de páginas
+      example:
+        users: []
+        page: 1
+        limit: 10
+        total: 25
+        pages: 3
+
+    UpdateRoleRequest:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [student, admin]
+          description: 👥 Nuevo rol para el usuario
+      example:
+        role: "admin"
+
+    CreateStudentRequest:
+      type: object
+      required: [first_name, last_name, middle_name, document_number, email]
+      properties:
+        first_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          description: 👤 Primer nombre del estudiante
+        last_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          description: 👤 Apellido paterno
+        middle_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          description: 👤 Apellido materno
+        document_number:
+          type: string
+          pattern: '^\d{8}$'
+          description: 🆔 DNI de 8 dígitos
+        email:
+          type: string
+          format: email
+          description: 📧 Correo electrónico del estudiante
+      example:
+        first_name: "Carlos"
+        last_name: "Torres"
+        middle_name: "Mejía"
+        document_number: "87654321"
+        email: "carlos.torres@example.com"
+
+    CreateStudentResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: ✅ Mensaje de confirmación
+        temporalPassword:
+          type: string
+          description: 🔑 Contraseña temporal generada
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            email:
+              type: string
+      example:
+        message: "Estudiante registrado correctamente"
+        temporalPassword: "a1b2c3d4"
+        user:
+          id: 5
+          name: "Carlos Torres Mejía"
+          email: "carlos.torres@example.com"
+
+    # =============================================================================
+    # 📋 AUDIT SCHEMAS
+    # =============================================================================
 
     AuditLog:
       type: object
       properties:
         id:
           type: integer
+          description: 🆔 ID del log de auditoría
         action:
           type: string
-          enum: [delete, restore]
+          enum: [delete, restore, role_change, create]
+          description: 🎬 Acción realizada
         user_id:
           type: integer
-          description: ID del admin que ejecutó la acción
+          description: 👨‍💼 ID del administrador que ejecutó la acción
         target_id:
           type: integer
-          description: ID del usuario afectado
+          description: 🎯 ID del usuario afectado
         timestamp:
           type: string
           format: date-time
+          description: 📅 Fecha y hora de la acción
         performed_by:
           type: object
           properties:
-            id: { type: integer }
-            first_name: { type: string }
-            last_name: { type: string }
-            middle_name: { type: string }
-            document_number: { type: string }
-            email: { type: string }
-
-    CreateStudentRequest:
-      type: object
-      required:
-        - first_name
-        - last_name
-        - middle_name
-        - document_number
-        - email
-      properties:
-        first_name:
-          type: string
-        last_name:
-          type: string
-        middle_name:
-          type: string
-        document_number:
-          type: string
-          pattern: '^\d{8}$'
-        email:
-          type: string
-          format: email
+            id:
+              type: integer
+            first_name:
+              type: string
+            last_name:
+              type: string
+            middle_name:
+              type: string
+            document_number:
+              type: string
+            email:
+              type: string
+          description: 👨‍💼 Información del administrador que realizó la acción
       example:
-        first_name: Carlos
-        last_name: Torres
-        middle_name: Mejía
-        document_number: "87654321"
-        email: carlos.torres@example.com
+        id: 1
+        action: "delete"
+        user_id: 1
+        target_id: 5
+        timestamp: "2024-01-15T14:30:00Z"
+        performed_by:
+          id: 1
+          first_name: "Admin"
+          last_name: "Principal"
+          middle_name: "Sistema"
+          document_number: "00000000"
+          email: "admin@nutriscanu.com"
 
-    StudentProfile:
+    AuditLogsResponse:
       type: object
       properties:
-        id: { type: integer }
-        first_name: { type: string }
-        last_name: { type: string }
-        middle_name: { type: string }
-        document_number: { type: string }
-        email: { type: string }
-
-    UpdateStudentProfile:
-      type: object
-      required:
-        - first_name
-        - last_name
-        - middle_name
-        - email
-      properties:
-        first_name:
-          type: string
-        last_name:
-          type: string
-        middle_name:
-          type: string
-        email:
-          type: string
-          format: email
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+        page:
+          type: integer
+          description: 📄 Página actual
+        limit:
+          type: integer
+          description: 📊 Elementos por página
+        total:
+          type: integer
+          description: 🔢 Total de logs
+        pages:
+          type: integer
+          description: 📄 Total de páginas
       example:
-        first_name: Ana
-        last_name: Rodríguez
-        middle_name: Vega
-        email: ana.rod@example.com
+        logs: []
+        page: 1
+        limit: 20
+        total: 50
+        pages: 3

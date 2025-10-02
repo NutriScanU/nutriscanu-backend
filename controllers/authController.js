@@ -443,25 +443,43 @@ export const debugGetResetCode = async (req, res) => {
 
 
 export const checkEmailExists = async (req, res) => {
-  const { email } = req.body; // CAMBIO: de req.query a req.body
+  // Verifica Content-Type
+  if (!req.is('application/json')) {
+    return res.status(415).json({ error: 'Tipo de contenido no soportado. Usa application/json.' });
+  }
 
+  const { email } = req.body;
+
+  // Validación: campo obligatorio
   if (!email) {
-    return res.status(400).json({ error: 'Email es requerido' });
+    return res.status(400).json({ error: 'Campo requerido' });
+  }
+
+  // Validación: formato de email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Por favor, ingresa un email válido.' });
   }
 
   try {
     const user = await User.findOne({ where: { email } });
 
     if (user) {
-      return res.status(200).json({ exists: true, message: 'El correo ya está registrado ✅' });
+      return res.status(200).json({
+        exists: true,
+        message: 'El email ingresado ya se encuentra en uso'
+      });
     } else {
-      return res.status(404).json({ exists: false, message: 'El correo no está registrado ❌' });
+      return res.status(200).json({
+        exists: false,
+        message: 'El correo electrónico está disponible.'
+      });
     }
   } catch (error) {
-    return res.status(500).json({ error: 'Error del servidor al verificar el email' });
+    console.error('Error al verificar el correo electrónico:', error);
+    return res.status(500).json({ error: 'Ocurrió un problema temporal al verificar tu correo. Intenta nuevamente en unos momentos.' });
   }
 };
-
 
 
 
