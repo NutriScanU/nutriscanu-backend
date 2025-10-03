@@ -29,7 +29,7 @@ export const register = async (req, res) => {
     }
 
     // 🧼 Validación de texto (solo letras y espacios)
-    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s'-]+$/;
     if (!nameRegex.test(first_name)) {
       return res.status(400).json({ error: 'El nombre solo puede contener letras y espacios.' });
     }

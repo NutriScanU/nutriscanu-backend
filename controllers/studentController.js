@@ -271,28 +271,78 @@ const updateUserName = async (req, res) => {
   let { first_name, middle_name, last_name } = req.body;
   const userId = req.user.userId;
 
-  const errors = [];
+  const errors = {};
 
-  if (!first_name) errors.push('El nombre es requerido.');
-  else if (first_name.length < 2) errors.push('El nombre debe tener al menos 2 caracteres.');
+  // Función para limpiar y normalizar texto
+  const cleanText = (text) => {
+    return text
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
 
-  if (!middle_name) errors.push('El apellido paterno es requerido.');
-  else if (middle_name.length < 2) errors.push('El apellido paterno debe tener al menos 2 caracteres.');
+  // Capitaliza cada palabra, manejando guiones y apóstrofes
+  const capitalizeWords = (str) => {
+    if (!str) return '';
+    return str
+      .split(' ')
+      .map(word => {
+        if (word.includes("'")) {
+          return word
+            .split("'")
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+            .join("'");
+        }
+        if (word.includes('-')) {
+          return word
+            .split('-')
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+            .join('-');
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join(' ');
+  };
 
-  if (!last_name) errors.push('El apellido materno es requerido.');
-  else if (last_name.length < 2) errors.push('El apellido materno debe tener al menos 2 caracteres.');
+  // Regex para validar nombres (letras, acentos, espacios, guiones, apóstrofes)
+  const validNamePattern = /^[A-Za-zÁÉÍÓÚáéíóúÑñüÜ']([A-Za-zÁÉÍÓÚáéíóúÑñüÜ\s'-]*[A-Za-zÁÉÍÓÚáéíóúÑñüÜ])?$/;
 
-  if (errors.length > 0) {
+  // Validación de cada campo
+  const validateField = (value, fieldDisplayName) => {
+    if (!value) return 'Falta llenar este campo.';
+    if (value.length < 2) return 'Debe tener al menos 2 caracteres.';
+    if (value.length > 50) return 'No puede superar 50 caracteres.';
+    if (!validNamePattern.test(value)) return 'Formato inválido. Solo letras, espacios, guiones y apóstrofes.';
+    if (/\s{2,}/.test(value)) return 'No se permiten espacios consecutivos.';
+    if (/[-]{2,}/.test(value)) return 'No se permiten guiones consecutivos.';
+    if (/[']{2,}/.test(value)) return 'No se permiten apóstrofes consecutivos.';
+    if (value.startsWith('-')) return 'No puede empezar con guión.';
+    if (value.endsWith("'") || value.endsWith("-")) return 'No puede terminar con apóstrofe ni guión. Debe terminar con una letra.';
+    if (!/[A-Za-zÁÉÍÓÚáéíóúÑñüÜ]$/.test(value)) return 'Debe terminar con una letra.';
+    // Al menos 2 letras
+    const letterCount = (value.match(/[A-Za-zÁÉÍÓÚáéíóúÑñüÜ]/g) || []).length;
+    if (letterCount < 2) return 'Debe contener al menos 2 letras.';
+    if (/(.)\1{4,}/.test(value)) return 'No se permiten caracteres repetidos excesivamente.';
+    return null;
+  };
+
+  // Limpiar y validar campos
+  first_name = cleanText(first_name || '');
+  middle_name = cleanText(middle_name || '');
+  last_name = cleanText(last_name || '');
+
+  const firstNameError = validateField(first_name, 'El nombre');
+  const middleNameError = validateField(middle_name, 'El apellido paterno');
+  const lastNameError = validateField(last_name, 'El apellido materno');
+
+  if (firstNameError) errors.first_name = firstNameError;
+  if (middleNameError) errors.middle_name = middleNameError;
+  if (lastNameError) errors.last_name = lastNameError;
+
+  if (Object.keys(errors).length > 0) {
     return res.status(400).json({ errors });
   }
 
-  // Capitalizar cada palabra (para nombres/apellidos compuestos)
-  const capitalizeWords = (str) =>
-    str
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
-
+  // Capitalizar antes de guardar
   first_name = capitalizeWords(first_name);
   middle_name = capitalizeWords(middle_name);
   last_name = capitalizeWords(last_name);
@@ -363,7 +413,6 @@ const updateProfileImage = async (req, res) => {
     return res.status(500).json({ error: 'Error interno del servidor.' });
   }
 };
-
 
 
 
